@@ -1,5 +1,6 @@
 const express = require('express');
 const ds18b20 = require('ds18b20');
+require('dotenv').config();
 const app = express();
 const PORT = 3000;
 
@@ -8,7 +9,7 @@ app.use(express.static('public'));
 
 app.get('/temperature', (req, res) => {
     // Your sensor's ID
-    const sensorId = '28-041470992aff';
+    const sensorId = process.env.DS18B20_SENSOR_ID;
 
     ds18b20.temperature(sensorId, (err, value) => {
         if (err) {
