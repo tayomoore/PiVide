@@ -10,7 +10,7 @@ app.use(express.static('public'));
 app.get('/temperature', (req, res) => {
     // Your sensor's ID
     const sensorId = process.env.DS18B20_SENSOR_ID;
-
+    console.log("here")
     ds18b20.temperature(sensorId, (err, value) => {
         if (err) {
             console.error(`Error reading temperature: ${err}`);
