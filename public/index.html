@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sous Vide Temperature</title>
+</head>
+<body>
+    <h1>Sous Vide Machine</h1>
+    <p>Current Temperature: <span id="temperature">Loading...</span>°C</p>
+
+    <script>
+        // Fetch the temperature from the server
+        fetch('/temperature')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('temperature').textContent = data.temperature;
+        });
+    </script>
+</body>
+</html>
