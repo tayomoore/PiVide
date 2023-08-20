@@ -1,4 +1,5 @@
 const express = require('express');
+const ds18b20 = require('ds18b20');
 const app = express();
 const PORT = 3000;
 
@@ -6,10 +7,18 @@ const PORT = 3000;
 app.use(express.static('public'));
 
 app.get('/temperature', (req, res) => {
-    // For now, we'll spoof the temperature
-    let spoofedTemperature = (Math.random() * (25 - 20) + 20).toFixed(2);  // Random temperature between 20 and 25
-    res.json({ temperature: spoofedTemperature });
+    // Your sensor's ID
+    const sensorId = '28-041470992aff';
+
+    ds18b20.temperature(sensorId, (err, value) => {
+        if (err) {
+            console.error(`Error reading temperature: ${err}`);
+            return res.status(500).send('Error reading temperature.');
+        }
+        res.send(value.toString());
+    });
 });
+
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
