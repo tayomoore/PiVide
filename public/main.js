@@ -1,4 +1,3 @@
-<script>
         // Fetch the temperature from the server
     fetch('/temperature')
             .then(response => response.json())
@@ -24,4 +23,3 @@
 
     // Attach the function to the button's click event
     document.getElementById('refreshTemperature').addEventListener('click', updateTemperature);
-</script>
