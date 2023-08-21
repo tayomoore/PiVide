@@ -10,7 +10,8 @@
         fetch('/temperature')
             .then(response => response.json())
             .then(data => {
-                document.getElementById('temperature').textContent = data.temperature;
+                let formattedTemperature = parseFloat(data.temperature).toFixed(1);
+                document.getElementById('temperature').textContent = formattedTemperature;
             })
             .catch(error => {
                 console.error('Error fetching temperature:', error);
