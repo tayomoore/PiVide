@@ -1,12 +1,18 @@
+// imports
 const express = require("express");
 const ds18b20 = require("ds18b20");
-require("dotenv").config();
+const GPIO = require("onoff").Gpio;
+const bodyParser = require("body-parser");
 const app = express();
 const PORT = 3000;
+require("dotenv").config();
 
-// This will serve your static files
+// Set things up
 app.use(express.static("public"));
+app.use(bodyParser.json());
+const HEATER_RELAY = new GPIO(2, "out");
 
+// functions
 app.get("/temperature", (req, res) => {
     // Your sensor's ID
     const sensorId = process.env.DS18B20_SENSOR_ID;
@@ -19,7 +25,28 @@ app.get("/temperature", (req, res) => {
     });
 });
 
+app.post("/heater", (req, res) => {
+    const command = req.body.command;
+    if (command === "on") {
+        HEATER_RELAY.writeSync(0);  // turn on
+        res.json({ "heaterState": "On" });
+    } else if (command === "off") {
+        HEATER_RELAY.writeSync(1);  // turn off
+        res.json({ "heaterState": "Off" });
+    } else {
+        res.status(400).send("Invalid command");
+    }
+});
 
+
+// Cleanup code to release GPIO pins upon program exit
+process.on("SIGINT", function () {
+    HEATER_RELAY.writeSync(1);      // Set pin to HIGH before exiting
+    HEATER_RELAY.unexport();        // Unexport pin
+    process.exit();                 // Exit the application
+});
+
+// start express server
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });

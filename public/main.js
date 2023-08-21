@@ -1,11 +1,4 @@
-// Fetch the temperature from the server
-fetch("/temperature")
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById("temperature").textContent = data.temperature;
-    });
-
-// Function to fetch and display the temperature
+// Fetch and display the temperature
 function updateTemperature() {
     fetch("/temperature")
         .then(response => response.json())
@@ -22,5 +15,30 @@ function updateTemperature() {
 // Call the function initially to set the temperature when the page loads
 updateTemperature();
 
-// Attach the function to the button's click event
+function controlHeat(command) {
+    fetch("/heater", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ command: command }),
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            document.getElementById("heaterState").textContent = data.heaterState;
+        })
+        .catch(error => {
+            console.error("Error:", error);
+        });
+}
+
+// Event listeners
 document.getElementById("refreshTemperature").addEventListener("click", updateTemperature);
+document.getElementById("heaterOn").addEventListener("click", function() {
+    controlHeat("on");
+});
+
+document.getElementById("heaterOff").addEventListener("click", function() {
+    controlHeat("off");
+});
