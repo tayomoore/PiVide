@@ -37,15 +37,7 @@ let loggingInterval;
 
 function startLoggingTemperature() {
     // Start the heater (if not started)
-    fetch("/heater", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            state: "on"
-        })
-    });
+    controlHeat("on")
 
     // Start logging the temperature every 30 seconds
     loggingInterval = setInterval(() => {
