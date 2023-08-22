@@ -3,11 +3,12 @@ const express = require("express");
 const ds18b20 = require("ds18b20");
 const GPIO = require("onoff").Gpio;
 const bodyParser = require("body-parser");
-const app = express();
-const PORT = 3000;
+const fs = require("fs");
 require("dotenv").config();
 
 // Set things up
+const app = express();
+const PORT = 3000;
 app.use(express.static("public"));
 app.use(bodyParser.json());
 const HEATER_RELAY = new GPIO(2, "out");
@@ -38,6 +39,14 @@ app.post("/heater", (req, res) => {
     }
 });
 
+app.post("/logTemperature", (req, res) => {
+    const temperature = req.body.temperature;
+    const logEntry = `${new Date().toISOString()}: ${temperature}\n`;
+    fs.appendFile("temperatureLog.txt", logEntry, (err) => {
+        if (err) throw err;
+    });
+    res.sendStatus(200);
+});
 
 // Cleanup code to release GPIO pins upon program exit
 process.on("SIGINT", function () {
