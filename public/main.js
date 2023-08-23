@@ -50,7 +50,7 @@ function controlLogging(command) {
 
 function controlSetpoint() {
     const temperature = document.getElementById("targetTemperature").value;
-    fetch("/setTargetTemperature", {
+    fetch("/control", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -72,8 +72,28 @@ document.getElementById("heaterOff").addEventListener("click", function() {contr
 document.getElementById("loggingOn").addEventListener("click", function() {controlLogging("on");});
 document.getElementById("loggingOff").addEventListener("click", function() {controlLogging("off");});
 document.getElementById("setTargetTemperature").addEventListener("click", function() {controlSetpoint();});
+document.addEventListener("DOMContentLoaded", () => {
+    // Fetch and update statuses
+    fetch("/status")
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("heaterState").textContent = data.heaterState;
+            document.getElementById("loggingState").textContent = data.loggingState;
+            document.getElementById("controlState").textContent = data.controlLoopState;
+            document.getElementById("targetTemperature").value = data.targetTemperature;
+        })
+        .catch(error => {
+            console.error("Error fetching statuses", error);
+            document.getElementById("heaterState").textContent = "Error fetching statuses";
+            document.getElementById("loggingState").textContent = "Error fetching statuses";
+            document.getElementById("controlState").textContent = "Error fetching statuses";
+            document.getElementById("targetTemperature").placeholder = "Error fetching statuses";
+        });
+
+    // Call your existing function to update the temperature
+    updateTemperature();
+});
 
 
-// Auto actions set on page load
-updateTemperature();
+// Set auto updates
 setInterval(updateTemperature, 10000);

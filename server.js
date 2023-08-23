@@ -9,11 +9,12 @@ require("dotenv").config();
 // Set things up
 const app = express();
 const PORT = 3000;
-app.use(express.static("public"));
-app.use(bodyParser.json());
-const HEATER_RELAY = new GPIO(2, "out");
 const SETPOINT_TOLERANCE = 2; //degrees C
 const TEMPERATURE_CONTROL_LOOP_INTERVAL = 10; // seconds 
+const HEATER_RELAY = new GPIO(2, "out");
+HEATER_RELAY.writeSync(1);  // turn off heater immediately (GPIO pin is *on* by default)
+app.use(express.static("public"));
+app.use(bodyParser.json());
 
 // internal functions
 function readTemperature() {
@@ -71,15 +72,6 @@ app.post("/heater", async (req, res) => {
     }
 });
 
-app.post("/logTemperature", async (req, res) => {
-    const result = await logMessage(req.body.temperature);
-    if (result) {
-        res.send({ success: true });
-    } else {
-        res.status(500).send({ success: false, message: "Error logging temperature" });
-    }
-});
-
 let loggingInterval;
 
 app.post("/logging", async (req, res) => {
@@ -108,7 +100,7 @@ app.post("/logging", async (req, res) => {
 let targetTemperature;
 let controlInterval;
 
-app.post("/setTargetTemperature", (req, res) => {
+app.post("/control", (req, res) => {
     targetTemperature = req.body.temperature;
     if (controlInterval) clearInterval(controlInterval); // clear any existing interval
 
@@ -118,9 +110,11 @@ app.post("/setTargetTemperature", (req, res) => {
 
             if (currentTemperature < targetTemperature - SETPOINT_TOLERANCE) {
                 // Turn on the heater
+                await logMessage(`currentTemperature: ${currentTemperature}, less than lower limit: ${(targetTemperature - SETPOINT_TOLERANCE)}, heater ON`);
                 HEATER_RELAY.writeSync(0);
             } else if (currentTemperature > targetTemperature + SETPOINT_TOLERANCE) {
                 // Turn off the heater
+                await logMessage(`currentTemperature: ${currentTemperature}, greater than upper limit: ${(targetTemperature + SETPOINT_TOLERANCE)}, heater OFF`);
                 HEATER_RELAY.writeSync(1);
             }
         } catch (error) {
@@ -131,6 +125,19 @@ app.post("/setTargetTemperature", (req, res) => {
     res.json({ message: "Temperature set and control loop started" });
 });
 
+app.get("/status", (req, res) => {
+    const heaterState = HEATER_RELAY.readSync() === 0 ? "On" : "Off";
+    const loggingState = loggingInterval ? "On" : "Off";
+    const controlState = controlInterval ? "On" : "Off";
+    const targetTemperature = targetTemperature;
+
+    res.json({
+        heaterState,
+        loggingState,
+        controlState,
+        targetTemperature
+    });
+});
 
 
 // Cleanup code to release GPIO pins upon program exit
