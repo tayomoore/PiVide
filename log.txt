@@ -1,0 +1,82 @@
+2023-08-23T21:34:33.153Z: currentTemperature: 26.8, between upper limit: 29.1 and lower limit: 25.1
+2023-08-23T21:34:43.152Z: currentTemperature: 26.9, between upper limit: 29.1 and lower limit: 25.1
+2023-08-23T21:34:58.432Z: currentTemperature: 26.9, between upper limit: 30.9 and lower limit: 26.9
+2023-08-23T21:35:08.432Z: currentTemperature: 26.8, less than lower limit: 26.9, heater ON
+2023-08-23T21:35:18.433Z: currentTemperature: 26.9, between upper limit: 30.9 and lower limit: 26.9
+2023-08-23T21:35:28.441Z: currentTemperature: 26.9, between upper limit: 30.9 and lower limit: 26.9
+2023-08-23T21:35:38.433Z: currentTemperature: 26.9, between upper limit: 30.9 and lower limit: 26.9
+2023-08-23T21:35:44.525Z: Released the GPIO pin and cleared the interval. Exiting now...
+2023-08-23T21:36:32.434Z: currentTemperature: 26.9, less than lower limit: 27.1, heater ON
+2023-08-23T21:36:42.112Z: currentTemperature: 26.9, less than lower limit: 27.1, heater ON
+2023-08-23T21:36:52.432Z: currentTemperature: 26.9, less than lower limit: 27.1, heater ON
+2023-08-23T21:37:02.112Z: currentTemperature: 26.9, less than lower limit: 27.1, heater ON
+2023-08-23T21:37:12.431Z: currentTemperature: 26.9, less than lower limit: 27.1, heater ON
+2023-08-23T21:37:22.113Z: currentTemperature: 26.9, less than lower limit: 27.1, heater ON
+2023-08-23T21:37:31.712Z: currentTemperature: 26.9, less than lower limit: 27.1, heater ON
+2023-08-23T21:37:41.711Z: currentTemperature: 26.9, less than lower limit: 27.1, heater ON
+2023-08-23T21:37:51.711Z: currentTemperature: 26.9, less than lower limit: 27.1, heater ON
+2023-08-23T21:38:01.711Z: currentTemperature: 26.9, less than lower limit: 27.1, heater ON
+2023-08-23T21:38:12.111Z: currentTemperature: 26.9, less than lower limit: 27.1, heater ON
+2023-08-23T21:38:22.431Z: currentTemperature: 27, less than lower limit: 27.1, heater ON
+2023-08-23T21:38:32.111Z: currentTemperature: 27, less than lower limit: 27.1, heater ON
+2023-08-23T21:38:42.431Z: currentTemperature: 27, less than lower limit: 27.1, heater ON
+2023-08-23T21:38:51.951Z: currentTemperature: 27.1, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:39:01.711Z: currentTemperature: 27.1, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:39:11.711Z: currentTemperature: 27.1, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:39:21.711Z: currentTemperature: 27.2, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:39:31.711Z: currentTemperature: 27.2, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:39:41.712Z: currentTemperature: 27.3, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:39:51.711Z: currentTemperature: 27.3, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:40:01.711Z: currentTemperature: 27.4, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:40:11.711Z: currentTemperature: 27.4, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:40:21.711Z: currentTemperature: 27.4, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:40:31.711Z: currentTemperature: 27.5, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:40:41.711Z: currentTemperature: 27.6, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:40:51.791Z: currentTemperature: 27.6, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:41:01.791Z: currentTemperature: 27.6, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:41:11.790Z: currentTemperature: 27.7, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:41:21.791Z: currentTemperature: 27.8, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:41:31.791Z: currentTemperature: 27.8, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:41:41.791Z: currentTemperature: 27.9, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:41:51.791Z: currentTemperature: 27.9, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:42:01.792Z: currentTemperature: 28, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:42:11.791Z: currentTemperature: 28.1, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:42:21.791Z: currentTemperature: 28.1, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:42:31.791Z: currentTemperature: 28.2, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:42:41.791Z: currentTemperature: 28.3, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:42:51.871Z: currentTemperature: 28.3, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:43:01.911Z: currentTemperature: 28.4, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:43:11.871Z: currentTemperature: 28.5, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:43:21.871Z: currentTemperature: 28.6, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:43:31.871Z: currentTemperature: 28.6, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:43:41.871Z: currentTemperature: 28.8, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:43:51.871Z: currentTemperature: 28.8, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:44:01.871Z: currentTemperature: 28.8, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:44:11.871Z: currentTemperature: 28.9, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:44:21.871Z: currentTemperature: 28.9, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:44:31.951Z: currentTemperature: 29, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:44:41.951Z: currentTemperature: 29.1, between upper limit: 29.1 and lower limit: 27.1
+2023-08-23T21:44:51.951Z: currentTemperature: 29.2, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:45:01.951Z: currentTemperature: 29.3, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:45:11.951Z: currentTemperature: 29.3, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:45:21.951Z: currentTemperature: 29.4, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:45:31.951Z: currentTemperature: 29.4, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:45:41.951Z: currentTemperature: 29.5, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:45:51.951Z: currentTemperature: 29.6, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:46:01.951Z: currentTemperature: 29.6, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:46:11.951Z: currentTemperature: 29.7, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:46:21.951Z: currentTemperature: 29.8, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:46:32.031Z: currentTemperature: 29.8, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:46:42.031Z: currentTemperature: 29.9, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:46:52.031Z: currentTemperature: 29.9, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:47:02.031Z: currentTemperature: 30, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:47:12.031Z: currentTemperature: 30.1, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:47:22.031Z: currentTemperature: 30.1, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:47:32.031Z: currentTemperature: 30.2, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:47:42.031Z: currentTemperature: 30.2, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:47:52.031Z: currentTemperature: 30.3, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:48:02.031Z: currentTemperature: 30.3, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:48:12.031Z: currentTemperature: 30.3, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:48:22.031Z: currentTemperature: 30.4, greater than upper limit: 29.1, heater OFF
+2023-08-23T21:48:31.926Z: Released the GPIO pin and cleared the interval. Exiting now...
+2023-08-23T21:48:32.112Z: currentTemperature: 30.4, greater than upper limit: 29.1, heater OFF

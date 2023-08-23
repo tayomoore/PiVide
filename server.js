@@ -9,7 +9,7 @@ require("dotenv").config();
 // Set things up
 const app = express();
 const PORT = 3000;
-const SETPOINT_TOLERANCE = 2; //degrees C
+const SETPOINT_TOLERANCE = 1.0; // degrees C either side of set point
 const TEMPERATURE_CONTROL_LOOP_INTERVAL = 10; // seconds 
 const HEATER_RELAY = new GPIO(2, "out");
 HEATER_RELAY.writeSync(1);  // turn off heater immediately (GPIO pin is *on* by default)
@@ -100,14 +100,14 @@ app.post("/logging", async (req, res) => {
 let targetTemperature;
 let controlInterval;
 
-app.post("/control", (req, res) => {
+app.post("/control", async (req, res) => {
     targetTemperature = req.body.temperature;
-    if (controlInterval) clearInterval(controlInterval); // clear any existing interval
-
+    if (controlInterval) {
+        clearInterval(controlInterval); // clear any existing interval
+    }
     controlInterval = setInterval(async () => {
         try {
             const currentTemperature = await readTemperature();
-
             if (currentTemperature < targetTemperature - SETPOINT_TOLERANCE) {
                 // Turn on the heater
                 await logMessage(`currentTemperature: ${currentTemperature}, less than lower limit: ${(targetTemperature - SETPOINT_TOLERANCE)}, heater ON`);
@@ -116,6 +116,9 @@ app.post("/control", (req, res) => {
                 // Turn off the heater
                 await logMessage(`currentTemperature: ${currentTemperature}, greater than upper limit: ${(targetTemperature + SETPOINT_TOLERANCE)}, heater OFF`);
                 HEATER_RELAY.writeSync(1);
+            } else {
+                // we're in the tolerance band, so carry on
+                await logMessage(`currentTemperature: ${currentTemperature}, between upper limit: ${(targetTemperature + SETPOINT_TOLERANCE)} and lower limit: ${(targetTemperature - SETPOINT_TOLERANCE)}`);
             }
         } catch (error) {
             console.error(`Error in control loop: ${error}`);
@@ -151,9 +154,9 @@ process.on("SIGINT", function () {
     HEATER_RELAY.writeSync(1); // Set pin to HIGH before exiting
     HEATER_RELAY.unexport();   // Unexport pin
 
-    logMessage("\nReleased the GPIO pin and cleared the interval. Exiting now...")
+    logMessage("Released the GPIO pin and cleared the interval. Exiting now...")
         .then(() => {
-            console.log("\nReleased the GPIO pin and cleared the intervals. Exiting now...");
+            console.log("Released the GPIO pin and cleared the intervals. Exiting now...");
             process.exit(0); // Exit the application
         })
         .catch(err => {
