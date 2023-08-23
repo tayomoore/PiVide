@@ -3,8 +3,7 @@ const express = require("express");
 const ds18b20 = require("ds18b20");
 const GPIO = require("onoff").Gpio;
 const bodyParser = require("body-parser");
-const fs = require("fs");
-const fsPromises = require('fs').promises;
+const fsPromises = require("fs").promises;
 require("dotenv").config();
 
 // Set things up
@@ -29,14 +28,14 @@ function readTemperature() {
     });
 }
 
-async function logTemperature(temperature){
+async function logMessage(message){
     try {
-        const logEntry = `${new Date().toISOString()}: ${temperature}\n`;
-        await fsPromises.appendFile("temperatureLog.txt", logEntry);
+        const logEntry = `${new Date().toISOString()}: ${message}\n`;
+        await fsPromises.appendFile("log.txt", logEntry);
         return true;
-    } catch (err) {
-        console.error(`Error logging temperature: ${err.message}`);
-        return false;
+    } catch (error) {
+        console.error(`Error logging message: ${error}`);
+        throw error;
     }
 }
 
@@ -51,13 +50,15 @@ app.get("/temperature", async (req, res) => {
 });
 
 
-app.post("/heater", (req, res) => {
+app.post("/heater", async (req, res) => {
     const command = req.body.command;
     if (command === "on") {
         HEATER_RELAY.writeSync(0);  // turn on
+        await logMessage("Heater turned ON");
         res.json({ "heaterState": "On" });
     } else if (command === "off") {
         HEATER_RELAY.writeSync(1);  // turn off
+        await logMessage("Heater turned OFF");
         res.json({ "heaterState": "Off" });
     } else {
         res.status(400).send("Invalid command");
@@ -65,7 +66,7 @@ app.post("/heater", (req, res) => {
 });
 
 app.post("/logTemperature", async (req, res) => {
-    const result = await logTemperature(req.body.temperature);
+    const result = await logMessage(req.body.temperature);
     if (result) {
         res.send({ success: true });
     } else {
@@ -81,7 +82,7 @@ app.post("/logging", async (req, res) => {
         loggingInterval = setInterval(async () => {
             try {
                 const temperature = await readTemperature();
-                await logTemperature(temperature);
+                await logMessage(temperature);
             } catch (error) {
                 console.error(`Error logging temperature: ${error}`);
             }
@@ -104,11 +105,20 @@ process.on("SIGINT", function () {
     if (loggingInterval) {
         clearInterval(loggingInterval);
     }
-    console.log("\nReleased the GPIO pin and cleared the interval. Exiting now...");
-    HEATER_RELAY.writeSync(1);      // Set pin to HIGH before exiting
-    HEATER_RELAY.unexport();        // Unexport pin
-    process.exit(0);                 // Exit the application
+    HEATER_RELAY.writeSync(1); // Set pin to HIGH before exiting
+    HEATER_RELAY.unexport();   // Unexport pin
+
+    logMessage("\nReleased the GPIO pin and cleared the interval. Exiting now...")
+        .then(() => {
+            console.log("\nReleased the GPIO pin and cleared the interval. Exiting now...");
+            process.exit(0); // Exit the application
+        })
+        .catch(err => {
+            console.error("Error logging the exit message:", err);
+            process.exit(1); // Exit with error status
+        });
 });
+
 
 // start express server
 app.listen(PORT, () => {
