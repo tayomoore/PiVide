@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(data => {
             document.getElementById("heaterState").textContent = data.heaterState;
             document.getElementById("loggingState").textContent = data.loggingState;
-            document.getElementById("controlState").textContent = data.controlLoopState;
+            document.getElementById("controlState").textContent = data.controlState;
             document.getElementById("targetTemperature").value = data.targetTemperature;
         })
         .catch(error => {
