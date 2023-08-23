@@ -33,11 +33,29 @@ function controlHeat(command) {
         });
 }
 
+function controlLogging(command) {
+    fetch("/logging", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ command: command }),
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            document.getElementById("loggingState").textContent = data.loggingState;
+        })
+        .catch(error => {
+            console.error("Error:", error);
+        });
+}
+
 let loggingInterval;
 
 function startLoggingTemperature() {
     // Start the heater (if not started)
-    controlHeat("on")
+    controlHeat("on");
 
     // Start logging the temperature every 30 seconds
     loggingInterval = setInterval(() => {
@@ -68,8 +86,9 @@ function stopLoggingTemperature() {
 document.getElementById("refreshTemperature").addEventListener("click", updateTemperature);
 document.getElementById("heaterOn").addEventListener("click", function() {controlHeat("on");});
 document.getElementById("heaterOff").addEventListener("click", function() {controlHeat("off");});
-document.getElementById("startLogging").addEventListener("click", startLoggingTemperature);
-document.getElementById("stopLogging").addEventListener("click", stopLoggingTemperature);
+document.getElementById("loggingOn").addEventListener("click", function() {controlLogging("on");});
+document.getElementById("loggingOff").addEventListener("click", function() {controlLogging("off");});
+
 
 // Auto actions
 setInterval(updateTemperature, 10000);
