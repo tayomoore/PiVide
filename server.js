@@ -13,7 +13,7 @@ app.use(express.static("public"));
 app.use(bodyParser.json());
 const HEATER_RELAY = new GPIO(2, "out");
 const SETPOINT_TOLERANCE = 2; //degrees C
-const TEMPERATURE_CONTROL_LOOP_INTERVAL = 10 // seconds 
+const TEMPERATURE_CONTROL_LOOP_INTERVAL = 10; // seconds 
 
 // internal functions
 function readTemperature() {
