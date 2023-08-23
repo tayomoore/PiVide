@@ -145,16 +145,19 @@ process.on("SIGINT", function () {
     if (loggingInterval) {
         clearInterval(loggingInterval);
     }
+    if (controlInterval) {
+        clearInterval(controlInterval);
+    }
     HEATER_RELAY.writeSync(1); // Set pin to HIGH before exiting
     HEATER_RELAY.unexport();   // Unexport pin
 
     logMessage("\nReleased the GPIO pin and cleared the interval. Exiting now...")
         .then(() => {
-            console.log("\nReleased the GPIO pin and cleared the interval. Exiting now...");
+            console.log("\nReleased the GPIO pin and cleared the intervals. Exiting now...");
             process.exit(0); // Exit the application
         })
         .catch(err => {
-            console.error("Error logging the exit message:", err);
+            console.error("Error logging the exit message", err);
             process.exit(1); // Exit with error status
         });
 });
