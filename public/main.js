@@ -50,7 +50,6 @@ function controlLogging(command) {
 
 function controlSetpoint() {
     const temperature = document.getElementById("targetTemperature").value;
-    console.log(temperature)
     fetch("/control", {
         method: "POST",
         headers: {
