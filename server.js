@@ -129,7 +129,7 @@ app.get("/status", (req, res) => {
     const heaterState = HEATER_RELAY.readSync() === 0 ? "On" : "Off";
     const loggingState = loggingInterval ? "On" : "Off";
     const controlState = controlInterval ? "On" : "Off";
-    const targetTemperature = targetTemperature;
+    const targetTemperature = targetTemperature || 0;
 
     res.json({
         heaterState,
