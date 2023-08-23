@@ -12,6 +12,8 @@ const PORT = 3000;
 app.use(express.static("public"));
 app.use(bodyParser.json());
 const HEATER_RELAY = new GPIO(2, "out");
+const SETPOINT_TOLERANCE = 2; //degrees C
+const TEMPERATURE_CONTROL_LOOP_INTERVAL = 10 // seconds 
 
 // internal functions
 function readTemperature() {
@@ -102,6 +104,33 @@ app.post("/logging", async (req, res) => {
         res.status(400).send("Invalid command");
     }
 });
+
+let targetTemperature;
+let controlInterval;
+
+app.post("/setTargetTemperature", (req, res) => {
+    targetTemperature = req.body.temperature;
+    if (controlInterval) clearInterval(controlInterval); // clear any existing interval
+
+    controlInterval = setInterval(async () => {
+        try {
+            const currentTemperature = await readTemperature();
+
+            if (currentTemperature < targetTemperature - SETPOINT_TOLERANCE) {
+                // Turn on the heater
+                HEATER_RELAY.writeSync(0);
+            } else if (currentTemperature > targetTemperature + SETPOINT_TOLERANCE) {
+                // Turn off the heater
+                HEATER_RELAY.writeSync(1);
+            }
+        } catch (error) {
+            console.error(`Error in control loop: ${error}`);
+        }
+    }, (TEMPERATURE_CONTROL_LOOP_INTERVAL * 1000));
+
+    res.json({ message: "Temperature set and control loop started" });
+});
+
 
 
 // Cleanup code to release GPIO pins upon program exit

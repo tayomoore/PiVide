@@ -11,9 +11,12 @@
 <body style="text-align: center;">
     <h1>PiVide Control</h1>
     <p>Current Temperature: <span id="temperature">Loading...</span>°C</p>
+    <input type="number" id="targetTemperature" placeholder="Enter target temperature">
+    <button id="setTargetTemperature">Set Target Temperature</button>
     <br>
-    <p>Heater State: <span id="heaterState">Unknown</span></p><br>
+    <p>Heater State: <span id="heaterState">Unknown</span></p>
     <p>Logging State: <span id="loggingState">Unknown</span></p>
+    <p>Temperature Control State: <span id="controlState">Unknown</span></p>
     <br>
     <button id="refreshTemperature">Refresh Temperature</button>
     <br>

@@ -1,4 +1,4 @@
-// Fetch and display the temperature
+// functions
 function updateTemperature() {
     fetch("/temperature")
         .then(response => response.json())
@@ -11,9 +11,6 @@ function updateTemperature() {
             document.getElementById("temperature").textContent = "Error fetching temperature.";
         });
 }
-
-// Call the function initially to set the temperature when the page loads
-updateTemperature();
 
 function controlHeat(command) {
     fetch("/heater", {
@@ -51,34 +48,20 @@ function controlLogging(command) {
         });
 }
 
-let loggingInterval;
-
-function startLoggingTemperature() {
-    // Start the heater (if not started)
-    controlHeat("on");
-
-    // Start logging the temperature every 30 seconds
-    loggingInterval = setInterval(() => {
-        fetch("/temperature")
-            .then(response => response.json())
-            .then(data => {
-                // Append to a text file
-                fetch("/logTemperature", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        temperature: data.temperature
-                    })
-                });
-            });
-    }, 30000);
-}
-
-function stopLoggingTemperature() {
-    clearInterval(loggingInterval);
-    console.log("Stopped logging temperature.");
+function controlSetpoint() {
+    const temperature = document.getElementById("targetTemperature").value;
+    fetch("/setTargetTemperature", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ temperature: parseFloat(temperature) })
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.message);
+            document.getElementById("controlState").textContent = data.message;
+        });
 }
 
 
@@ -88,8 +71,9 @@ document.getElementById("heaterOn").addEventListener("click", function() {contro
 document.getElementById("heaterOff").addEventListener("click", function() {controlHeat("off");});
 document.getElementById("loggingOn").addEventListener("click", function() {controlLogging("on");});
 document.getElementById("loggingOff").addEventListener("click", function() {controlLogging("off");});
+document.getElementById("setTargetTemperature").addEventListener("click", function() {controlSetpoint();});
 
 
-// Auto actions
+// Auto actions set on page load
+updateTemperature();
 setInterval(updateTemperature, 10000);
-
