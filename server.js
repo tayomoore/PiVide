@@ -54,11 +54,15 @@ app.post("/heater", async (req, res) => {
     const command = req.body.command;
     if (command === "on") {
         HEATER_RELAY.writeSync(0);  // turn on
-        await logMessage("Heater turned ON");
+        if (loggingInterval) {  // Check if logging is enabled
+            await logMessage("Heater turned ON");
+        }
         res.json({ "heaterState": "On" });
     } else if (command === "off") {
         HEATER_RELAY.writeSync(1);  // turn off
-        await logMessage("Heater turned OFF");
+        if (loggingInterval) {  // Check if logging is enabled
+            await logMessage("Heater turned OFF");
+        }
         res.json({ "heaterState": "Off" });
     } else {
         res.status(400).send("Invalid command");
