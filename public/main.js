@@ -1,16 +1,19 @@
-// functions
+const UPDATE_INTERVAL = 10000; // 10 seconds
+
+// Functions
 function updateTemperature() {
     fetch("/temperature")
         .then(response => response.json())
         .then(data => {
-            let formattedTemperature = parseFloat(data.temperature).toFixed(1);
+            const formattedTemperature = parseFloat(data.temperature).toFixed(1);
             document.getElementById("temperature").textContent = formattedTemperature;
         })
         .catch(error => {
             console.error("Error fetching temperature:", error);
-            document.getElementById("temperature").textContent = "Error fetching temperature.";
+            document.getElementById("temperature").textContent = "Error: " + error.message;
         });
 }
+
 
 function controlHeat(command) {
     fetch("/heater", {
@@ -96,4 +99,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 // Set auto updates
-setInterval(updateTemperature, 10000);
+setInterval(updateTemperature, UPDATE_INTERVAL);

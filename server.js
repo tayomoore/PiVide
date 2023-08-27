@@ -13,14 +13,14 @@ const SETPOINT_TOLERANCE = 1.0; // degrees C either side of set point
 const TEMPERATURE_CONTROL_LOOP_INTERVAL = 10; // seconds 
 const HEATER_RELAY = new GPIO(2, "out");
 HEATER_RELAY.writeSync(1);  // turn off heater immediately (GPIO pin is *on* by default)
+const SENSOR_ID = process.env.DS18B20_SENSOR_ID;
 app.use(express.static("public"));
 app.use(bodyParser.json());
 
 // internal functions
 function readTemperature() {
     return new Promise((resolve, reject) => {
-        const sensorId = process.env.DS18B20_SENSOR_ID;
-        ds18b20.temperature(sensorId, (err, value) => {
+        ds18b20.temperature(SENSOR_ID, (err, value) => {
             if (err) {
                 console.error(`Error reading temperature: ${err}`);
                 reject("Error");
@@ -46,9 +46,9 @@ async function logMessage(message){
 app.get("/temperature", async (req, res) => {
     try {
         const temperature = await readTemperature();
-        res.json({ "temperature": temperature });
+        res.json({ message: "Temperature fetched successfully", temperature: temperature });
     } catch (error) {
-        res.status(500).send("Error reading temperature.");
+        res.status(500).json({ message: "Error reading temperature: " + error.message });
     }
 });
 
@@ -144,26 +144,30 @@ app.get("/status", (req, res) => {
 
 
 // Cleanup code to release GPIO pins upon program exit
-process.on("SIGINT", function () {
+function cleanupAndExit() {
     if (loggingInterval) {
         clearInterval(loggingInterval);
     }
     if (controlInterval) {
         clearInterval(controlInterval);
     }
-    HEATER_RELAY.writeSync(1); // Set pin to HIGH before exiting
-    HEATER_RELAY.unexport();   // Unexport pin
+    HEATER_RELAY.writeSync(1);
+    HEATER_RELAY.unexport();
 
     logMessage("Released the GPIO pin and cleared the interval. Exiting now...")
         .then(() => {
             console.log("Released the GPIO pin and cleared the intervals. Exiting now...");
-            process.exit(0); // Exit the application
+            process.exit(0);
         })
         .catch(err => {
             console.error("Error logging the exit message", err);
-            process.exit(1); // Exit with error status
+            process.exit(1);
         });
-});
+}
+
+process.on("SIGINT", cleanupAndExit);
+process.on("SIGTERM", cleanupAndExit); // Handling SIGTERM for graceful shutdowns
+
 
 
 // start express server

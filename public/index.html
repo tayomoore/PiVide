@@ -5,28 +5,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PiVide</title>
+    <link rel="stylesheet" href="styles.css">
     <script src="main.js" defer></script>
 </head>
 
-<body style="text-align: center;">
+<body>
     <h1>PiVide Control</h1>
-    <p>Current Temperature: <span id="temperature">Loading...</span>°C</p>
-    <input type="number" id="targetTemperature" placeholder="Enter target temperature">
-    <button id="setTargetTemperature">Set Target Temperature</button>
+    <p>Current Temperature: <span id="temperature" aria-label="Current Temperature">Loading...</span>°C</p>
+    <input type="number" id="targetTemperature" placeholder="Enter target temperature" aria-label="Target Temperature">
+    <button id="setTargetTemperature" aria-label="Set Target Temperature">Set Target Temperature</button>
     <br>
-    <p>Heater State: <span id="heaterState">Unknown</span></p>
-    <p>Logging State: <span id="loggingState">Unknown</span></p>
-    <p>Temperature Control State: <span id="controlState">Unknown</span></p>
+    <p>Heater State: <span id="heaterState" aria-label="Heater State">Unknown</span></p>
+    <p>Logging State: <span id="loggingState" aria-label="Logging State">Unknown</span></p>
+    <p>Temperature Control State: <span id="controlState" aria-label="Temperature Control State">Unknown</span></p>
     <br>
-    <button id="refreshTemperature">Refresh Temperature</button>
-    <br>
-    <br>
-    <button id="heaterOn">Turn Heater On</button>
-    <button id="heaterOff">Turn Heater Off</button>
+    <button id="refreshTemperature" aria-label="Refresh Temperature">Refresh Temperature</button>
     <br>
     <br>
-    <button id="loggingOn">Start Logging</button>
-    <button id="loggingOff">Stop Logging</button>
+    <button id="heaterOn" aria-label="Turn Heater On">Turn Heater On</button>
+    <button id="heaterOff" aria-label="Turn Heater Off">Turn Heater Off</button>
+    <br>
+    <br>
+    <button id="loggingOn" aria-label="Start Logging">Start Logging</button>
+    <button id="loggingOff" aria-label="Stop Logging">Stop Logging</button>
 </body>
 
 </html>
