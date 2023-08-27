@@ -67,6 +67,36 @@ function controlSetpoint() {
         });
 }
 
+function stopControlLoop() {
+    fetch("/control", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ command: "stop" })
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.message);
+            updateAllStatuses();
+        });
+}
+
+function updateAllStatuses() {
+    fetch("/status")
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("heaterState").textContent = data.heaterState;
+            document.getElementById("loggingState").textContent = data.loggingState;
+            document.getElementById("controlState").textContent = data.controlState;
+            document.getElementById("targetTemperature").value = data.targetTemperature;
+            document.getElementById("temperature").textContent = parseFloat(data.temperature).toFixed(1);
+        })
+        .catch(error => {
+            console.error("Error fetching statuses", error);
+        });
+}
+
 
 // Event listeners
 document.getElementById("refreshTemperature").addEventListener("click", updateTemperature);
@@ -75,28 +105,9 @@ document.getElementById("heaterOff").addEventListener("click", function() {contr
 document.getElementById("loggingOn").addEventListener("click", function() {controlLogging("on");});
 document.getElementById("loggingOff").addEventListener("click", function() {controlLogging("off");});
 document.getElementById("setTargetTemperature").addEventListener("click", function() {controlSetpoint();});
-document.addEventListener("DOMContentLoaded", () => {
-    // Fetch and update statuses
-    fetch("/status")
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById("heaterState").textContent = data.heaterState;
-            document.getElementById("loggingState").textContent = data.loggingState;
-            document.getElementById("controlState").textContent = data.controlState;
-            document.getElementById("targetTemperature").value = data.targetTemperature;
-        })
-        .catch(error => {
-            console.error("Error fetching statuses", error);
-            document.getElementById("heaterState").textContent = "Error fetching statuses";
-            document.getElementById("loggingState").textContent = "Error fetching statuses";
-            document.getElementById("controlState").textContent = "Error fetching statuses";
-            document.getElementById("targetTemperature").placeholder = "Error fetching statuses";
-        });
-
-    // Call your existing function to update the temperature
-    updateTemperature();
-});
+document.getElementById("stopControlLoop").addEventListener("click", function() {stopControlLoop();});
+document.addEventListener("DOMContentLoaded", function() {updateAllStatuses();});
 
 
 // Set auto updates
-setInterval(updateTemperature, UPDATE_INTERVAL);
+setInterval(updateAllStatuses, 10000);

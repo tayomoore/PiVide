@@ -101,6 +101,14 @@ let targetTemperature;
 let controlInterval;
 
 app.post("/control", async (req, res) => {
+    if (req.body.command && req.body.command === "stop") {
+        if (controlInterval) {
+            clearInterval(controlInterval); // clear the existing interval
+            controlInterval = null;
+            res.json({ message: "Control loop stopped" });
+            return;
+        }
+    }
     targetTemperature = req.body.temperature;
     if (controlInterval) {
         clearInterval(controlInterval); // clear any existing interval
@@ -139,7 +147,7 @@ app.get("/status", async (req, res) => {
     if (controlInterval) {
         try {
             const currentTemperature = parseFloat(await readTemperature());
-            const difference = currentTemperature - currentTargetTemperature;
+            const difference = parseFloat((currentTemperature - currentTargetTemperature).toFixed(1));
             if (difference < -SETPOINT_TOLERANCE) {
                 controlStateMessage = `Target is ${currentTargetTemperature}°C, currently ${-difference}°C below threshold (heater on)`;
             } else if (difference > SETPOINT_TOLERANCE) {
