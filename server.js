@@ -10,7 +10,7 @@ require("dotenv").config();
 const app = express();
 const PORT = 3000;
 const SETPOINT_TOLERANCE = 1.0; // degrees C either side of set point
-const TEMPERATURE_CONTROL_LOOP_INTERVAL = 10; // seconds 
+const TEMPERATURE_CONTROL_LOOP_INTERVAL = 5; // seconds 
 const HEATER_RELAY = new GPIO(2, "out");
 HEATER_RELAY.writeSync(1);  // turn off heater immediately (GPIO pin is *on* by default)
 const SENSOR_ID = process.env.DS18B20_SENSOR_ID;
@@ -57,45 +57,39 @@ app.post("/heater", async (req, res) => {
     const command = req.body.command;
     if (command === "on") {
         HEATER_RELAY.writeSync(0);  // turn on
-        if (loggingInterval) {  // Check if logging is enabled
-            await logMessage("Heater turned ON");
-        }
+        await logMessage("Heater turned ON");
         res.json({ "heaterState": "On" });
     } else if (command === "off") {
         HEATER_RELAY.writeSync(1);  // turn off
-        if (loggingInterval) {  // Check if logging is enabled
-            await logMessage("Heater turned OFF");
-        }
+        await logMessage("Heater turned OFF");
         res.json({ "heaterState": "Off" });
     } else {
         res.status(400).send("Invalid command");
     }
 });
 
-let loggingInterval;
-
-app.post("/logging", async (req, res) => {
-    const command = req.body.command;
-    if (command === "on" && !loggingInterval) {
-        loggingInterval = setInterval(async () => {
-            try {
-                const temperature = await readTemperature();
-                await logMessage(temperature);
-            } catch (error) {
-                console.error(`Error logging temperature: ${error}`);
-            }
-        }, 30000);
-        res.json({ "loggingState": "Logging started" });
-    } else if (command === "on" && loggingInterval) {
-        res.json({ "loggingState": "Logging already started" });
-    } else if (command === "off") {
-        clearInterval(loggingInterval);
-        loggingInterval = null;
-        res.json({ "loggingState": "Logging stopped" });
+async function evaluateTemperatureControl(targetTemp) {
+    const currentTemperature = parseFloat(await readTemperature());
+    const difference = parseFloat((currentTemperature - targetTemp).toFixed(1));
+    const distanceToEdgeOfDeadband = Math.abs(parseFloat((difference - SETPOINT_TOLERANCE).toFixed(1)));
+    
+    if (difference < -SETPOINT_TOLERANCE) {
+        return {
+            action: "turnOn",
+            message: `Target is ${targetTemp}°C, currently ${-difference}°C below threshold (heater on)`
+        };
+    } else if (difference > SETPOINT_TOLERANCE) {
+        return {
+            action: "turnOff",
+            message: `Target is ${targetTemp}°C, currently ${difference}°C above threshold (heater off)`
+        };
     } else {
-        res.status(400).send("Invalid command");
+        return {
+            action: "doNothing",
+            message: `Target is ${targetTemp}°C, currently ${distanceToEdgeOfDeadband}°C within tolerance (heater unchanged)`
+        };
     }
-});
+}
 
 let targetTemperature;
 let controlInterval;
@@ -104,6 +98,7 @@ app.post("/control", async (req, res) => {
     if (req.body.command && req.body.command === "stop") {
         if (controlInterval) {
             clearInterval(controlInterval); // clear the existing interval
+            HEATER_RELAY.writeSync(1); //turn off the heater
             controlInterval = null;
             res.json({ message: "Control loop stopped" });
             return;
@@ -115,23 +110,18 @@ app.post("/control", async (req, res) => {
     }
     controlInterval = setInterval(async () => {
         try {
-            const currentTemperature = await readTemperature();
-            if (currentTemperature < targetTemperature - SETPOINT_TOLERANCE) {
-                // Turn on the heater
-                await logMessage(`currentTemperature: ${currentTemperature}, less than lower limit: ${(targetTemperature - SETPOINT_TOLERANCE)}, heater ON`);
+            const { action, message } = await evaluateTemperatureControl(targetTemperature);
+            await logMessage(message);
+            if (action === "turnOn") {
                 HEATER_RELAY.writeSync(0);
-            } else if (currentTemperature > targetTemperature + SETPOINT_TOLERANCE) {
-                // Turn off the heater
-                await logMessage(`currentTemperature: ${currentTemperature}, greater than upper limit: ${(targetTemperature + SETPOINT_TOLERANCE)}, heater OFF`);
+            } else if (action === "turnOff") {
                 HEATER_RELAY.writeSync(1);
-            } else {
-                // we're in the tolerance band, so carry on
-                await logMessage(`currentTemperature: ${currentTemperature}, between upper limit: ${(targetTemperature + SETPOINT_TOLERANCE)} and lower limit: ${(targetTemperature - SETPOINT_TOLERANCE)}`);
             }
         } catch (error) {
             console.error(`Error in control loop: ${error}`);
         }
     }, (TEMPERATURE_CONTROL_LOOP_INTERVAL * 1000));
+    
 
     res.json({ message: "Temperature set and control loop started" });
 });
@@ -139,30 +129,21 @@ app.post("/control", async (req, res) => {
 // Endpoint to get the current status of the system
 app.get("/status", async (req, res) => {
     const heaterState = HEATER_RELAY.readSync() === 0 ? "On" : "Off";
-    const loggingState = loggingInterval ? "On" : "Off";
     const currentTargetTemperature = targetTemperature || 0;
     let controlStateMessage = "Off";
 
     // If control loop is active, provide a detailed breakdown of the control state
     if (controlInterval) {
         try {
-            const currentTemperature = parseFloat(await readTemperature());
-            const difference = parseFloat((currentTemperature - currentTargetTemperature).toFixed(1));
-            if (difference < -SETPOINT_TOLERANCE) {
-                controlStateMessage = `Target is ${currentTargetTemperature}°C, currently ${-difference}°C below threshold (heater on)`;
-            } else if (difference > SETPOINT_TOLERANCE) {
-                controlStateMessage = `Target is ${currentTargetTemperature}°C, currently ${difference}°C above threshold (heater off)`;
-            } else {
-                controlStateMessage = `Target is ${currentTargetTemperature}°C, currently ${difference}°C within tolerance`;
-            }
+            const { message } = await evaluateTemperatureControl(currentTargetTemperature);
+            controlStateMessage = message;
         } catch (error) {
             controlStateMessage = "Error fetching control state details";
         }
-    }
+    }    
 
     res.json({
         heaterState,
-        loggingState,
         controlState: controlStateMessage,
         targetTemperature: currentTargetTemperature
     });
@@ -172,9 +153,6 @@ app.get("/status", async (req, res) => {
 
 // Cleanup code to release GPIO pins upon program exit
 function cleanupAndExit() {
-    if (loggingInterval) {
-        clearInterval(loggingInterval);
-    }
     if (controlInterval) {
         clearInterval(controlInterval);
     }
