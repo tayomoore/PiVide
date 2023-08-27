@@ -128,19 +128,38 @@ app.post("/control", async (req, res) => {
     res.json({ message: "Temperature set and control loop started" });
 });
 
-app.get("/status", (req, res) => {
+// Endpoint to get the current status of the system
+app.get("/status", async (req, res) => {
     const heaterState = HEATER_RELAY.readSync() === 0 ? "On" : "Off";
     const loggingState = loggingInterval ? "On" : "Off";
-    const controlState = controlInterval ? "On" : "Off";
     const currentTargetTemperature = targetTemperature || 0;
+    let controlStateMessage = "Off";
+
+    // If control loop is active, provide a detailed breakdown of the control state
+    if (controlInterval) {
+        try {
+            const currentTemperature = parseFloat(await readTemperature());
+            const difference = currentTemperature - currentTargetTemperature;
+            if (difference < -SETPOINT_TOLERANCE) {
+                controlStateMessage = `Target is ${currentTargetTemperature}°C, currently ${-difference}°C below threshold (heater on)`;
+            } else if (difference > SETPOINT_TOLERANCE) {
+                controlStateMessage = `Target is ${currentTargetTemperature}°C, currently ${difference}°C above threshold (heater off)`;
+            } else {
+                controlStateMessage = `Target is ${currentTargetTemperature}°C, currently ${difference}°C within tolerance`;
+            }
+        } catch (error) {
+            controlStateMessage = "Error fetching control state details";
+        }
+    }
 
     res.json({
         heaterState,
         loggingState,
-        controlState,
+        controlState: controlStateMessage,
         targetTemperature: currentTargetTemperature
     });
 });
+
 
 
 // Cleanup code to release GPIO pins upon program exit
