@@ -110,4 +110,4 @@ document.addEventListener("DOMContentLoaded", function() {updateAllStatuses();})
 
 
 // Set auto updates
-setInterval(updateAllStatuses, 10000);
+setInterval(updateAllStatuses, UPDATE_INTERVAL);
