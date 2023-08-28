@@ -9,7 +9,7 @@ function updateTemperature() {
             document.getElementById("temperature").textContent = formattedTemperature;
         })
         .catch(error => {
-            console.error("Error fetching temperature:", error);
+            logToServer(`Error fetching temperature: ${error}`);
             document.getElementById("temperature").textContent = "Error: " + error.message;
         });
 }
@@ -28,7 +28,7 @@ function controlHeat(command) {
             document.getElementById("heaterState").textContent = data.heaterState;
         })
         .catch(error => {
-            console.error("Error:", error);
+            logToServer(`Error setting heater state: ${error}`);
         });
 }
 
@@ -43,7 +43,6 @@ function controlSetpoint() {
     })
         .then(response => response.json())
         .then(data => {
-            console.log(data.message);
             document.getElementById("controlState").textContent = data.message;
             document.getElementById("setTargetTemperatureDisplay").textContent = parseFloat(temperatureValue).toFixed(1);
         });
@@ -58,10 +57,7 @@ function stopControlLoop() {
         body: JSON.stringify({ command: "stop" })
     })
         .then(response => response.json())
-        .then(data => {
-            console.log(data.message);
-            updateAllStatuses();
-        });
+        .then(updateAllStatuses());
 }
 
 function updateAllStatuses() {
@@ -74,7 +70,20 @@ function updateAllStatuses() {
             document.getElementById("temperature").textContent = parseFloat(data.temperature).toFixed(1);
         })
         .catch(error => {
-            console.error("Error fetching statuses", error);
+            logToServer(`Error fetching statuses clientside: ${error}`);
+        });
+}
+
+function logToServer(message) {
+    fetch("/log", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: message }),
+    })
+        .catch(error => {
+            console.error("Failed to log to server:", error);
         });
 }
 
