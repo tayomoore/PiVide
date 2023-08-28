@@ -25,7 +25,6 @@ function controlHeat(command) {
     })
         .then(response => response.json())
         .then(data => {
-            console.log(data);
             document.getElementById("heaterState").textContent = data.heaterState;
         })
         .catch(error => {
