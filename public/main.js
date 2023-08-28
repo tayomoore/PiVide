@@ -87,14 +87,54 @@ function logToServer(message) {
         });
 }
 
+function fetchAndDisplayTolerance() {
+    fetch("/tolerance")
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("toleranceInput").value = data.tolerance;
+        })
+        .catch(error => {
+            logToServer("Error fetching tolerance: " + error.message);
+        });
+}
+
+function updateTolerance() {
+    const newTolerance = parseFloat(document.getElementById("toleranceInput").value);
+    fetch("/tolerance", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ tolerance: newTolerance })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log(data.message);
+                logToServer(data.message);
+            } else {
+                console.error(data.message);
+                logToServer("Error updating tolerance: " + data.message);
+            }
+        })
+        .catch(error => {
+            console.error("Error updating tolerance:", error);
+            logToServer("Error updating tolerance: " + error.message);
+        });
+}
+
 
 // Event listeners
 document.getElementById("refreshTemperature").addEventListener("click", updateTemperature);
 document.getElementById("heaterOn").addEventListener("click", function() {controlHeat("on");});
 document.getElementById("heaterOff").addEventListener("click", function() {controlHeat("off");});
-document.getElementById("setTargetTemperature").addEventListener("click", function() {controlSetpoint();});
-document.getElementById("stopControlLoop").addEventListener("click", function() {stopControlLoop();});
-document.addEventListener("DOMContentLoaded", function() {updateAllStatuses();});
+document.getElementById("setTargetTemperature").addEventListener("click", controlSetpoint);
+document.getElementById("stopControlLoop").addEventListener("click", stopControlLoop);
+document.getElementById("setTolerance").addEventListener("click", updateTolerance);
+document.addEventListener("DOMContentLoaded", function() {
+    updateAllStatuses();
+    fetchAndDisplayTolerance();
+});
 
 
 // Set auto updates

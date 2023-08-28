@@ -9,7 +9,8 @@ require("dotenv").config();
 // Set things up
 const app = express();
 const PORT = 3000;
-const SETPOINT_TOLERANCE = 1.0; // degrees C either side of set point
+const SETPOINT_TOLERANCE_DEFAULT = 1.0; // degrees C either side of set point
+let SETPOINT_TOLERANCE = SETPOINT_TOLERANCE_DEFAULT; // This will be the modifiable value
 const TEMPERATURE_CONTROL_LOOP_INTERVAL = 10; // seconds 
 const HEATER_RELAY = new GPIO(2, "out");
 HEATER_RELAY.writeSync(1);  // turn off heater immediately (GPIO pin is *on* by default)
@@ -50,7 +51,9 @@ async function logMessage(message){
 async function evaluateTemperatureControl(targetTemp) {
     const currentTemperature = parseFloat(await readTemperature());
     const difference = parseFloat((currentTemperature - targetTemp).toFixed(1));
-    const distanceToEdgeOfDeadband = Math.abs(parseFloat((difference - SETPOINT_TOLERANCE).toFixed(1)));
+    const distanceToEdgeOfDeadband = (difference >= 0) 
+        ? parseFloat((difference - SETPOINT_TOLERANCE).toFixed(1)) 
+        : parseFloat((-difference - SETPOINT_TOLERANCE).toFixed(1));
     
     if (difference < -SETPOINT_TOLERANCE) {
         return {
@@ -90,7 +93,6 @@ app.post("/log", async (req, res) => {
         res.status(500).send("Failed to log client message.");
     }
 });
-
 
 app.post("/heater", async (req, res) => {
     const command = req.body.command;
@@ -167,6 +169,19 @@ app.get("/status", async (req, res) => {
     });
 });
 
+app.get("/tolerance", (req, res) => {
+    res.json({ tolerance: SETPOINT_TOLERANCE });
+});
+
+app.post("/tolerance", (req, res) => {
+    const { tolerance } = req.body;
+    if (typeof tolerance === "number" && tolerance > 0) {
+        SETPOINT_TOLERANCE = tolerance;
+        res.json({ success: true, message: `Tolerance updated successfully to ${tolerance}` });
+    } else {
+        res.status(400).json({ success: false, message: `Invalid tolerance value ${tolerance}` });
+    }
+});
 
 // Cleanup code to release GPIO pins upon program exit
 function cleanupAndExit() {
