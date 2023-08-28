@@ -52,8 +52,8 @@ async function evaluateTemperatureControl(targetTemp) {
     const currentTemperature = parseFloat(await readTemperature());
     const difference = parseFloat((currentTemperature - targetTemp).toFixed(1));
     const distanceToEdgeOfDeadband = (difference >= 0) 
-        ? parseFloat((difference - SETPOINT_TOLERANCE).toFixed(1)) 
-        : parseFloat((-difference - SETPOINT_TOLERANCE).toFixed(1));
+        ? Math.abs(parseFloat((difference - SETPOINT_TOLERANCE).toFixed(1)))
+        : Math.abs(parseFloat((-difference - SETPOINT_TOLERANCE).toFixed(1)));
     
     if (difference < -SETPOINT_TOLERANCE) {
         return {

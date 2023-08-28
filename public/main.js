@@ -70,7 +70,7 @@ function updateAllStatuses() {
             document.getElementById("temperature").textContent = parseFloat(data.temperature).toFixed(1);
         })
         .catch(error => {
-            logToServer(`Error fetching statuses clientside: ${error}`);
+            logToServer(`Error fetching statuses: ${error}`);
         });
 }
 
