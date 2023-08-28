@@ -34,18 +34,19 @@ function controlHeat(command) {
 }
 
 function controlSetpoint() {
-    const temperature = document.getElementById("targetTemperature").value;
+    const temperatureValue = document.getElementById("targetTemperatureInput").value;
     fetch("/control", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ temperature: parseFloat(temperature) })
+        body: JSON.stringify({ temperature: parseFloat(temperatureValue) })
     })
         .then(response => response.json())
         .then(data => {
             console.log(data.message);
             document.getElementById("controlState").textContent = data.message;
+            document.getElementById("setTargetTemperatureDisplay").textContent = parseFloat(temperatureValue).toFixed(1);
         });
 }
 
@@ -70,7 +71,7 @@ function updateAllStatuses() {
         .then(data => {
             document.getElementById("heaterState").textContent = data.heaterState;
             document.getElementById("controlState").textContent = data.controlState;
-            document.getElementById("targetTemperature").value = data.targetTemperature;
+            document.getElementById("setTargetTemperatureDisplay").textContent = parseFloat(data.targetTemperature).toFixed(1);
             document.getElementById("temperature").textContent = parseFloat(data.temperature).toFixed(1);
         })
         .catch(error => {

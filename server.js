@@ -127,27 +127,34 @@ app.post("/control", async (req, res) => {
 });
 
 // Endpoint to get the current status of the system
+// Endpoint to get the current status of the system
 app.get("/status", async (req, res) => {
     const heaterState = HEATER_RELAY.readSync() === 0 ? "On" : "Off";
-    const currentTargetTemperature = targetTemperature || 0;
     let controlStateMessage = "Off";
+    let currentTemperatureValue;
+    const currentTargetTemperature = targetTemperature || 0;
+
+    try {
+        currentTemperatureValue = await readTemperature();
+    } catch (error) {
+        console.error("Error reading temperature for status:", error);
+        currentTemperatureValue = "Error";
+    }
 
     // If control loop is active, provide a detailed breakdown of the control state
     if (controlInterval) {
-        try {
-            const { message } = await evaluateTemperatureControl(currentTargetTemperature);
-            controlStateMessage = message;
-        } catch (error) {
-            controlStateMessage = "Error fetching control state details";
-        }
-    }    
+        const { message } = await evaluateTemperatureControl(targetTemperature);
+        controlStateMessage = message;
+    }
 
     res.json({
         heaterState,
         controlState: controlStateMessage,
-        targetTemperature: currentTargetTemperature
+        targetTemperature: currentTargetTemperature,
+        temperature: currentTemperatureValue
     });
 });
+
 
 
 
