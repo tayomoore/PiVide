@@ -30,7 +30,7 @@ function controlSetpoint() {
         .then(response => response.json())
         .then(data => {
             document.getElementById("controlState").textContent = data.message;
-            document.getElementById("setTargetTemperatureDisplay").textContent = parseFloat(temperatureValue).toFixed(1);
+            document.getElementById("targetTemperatureDisplay").textContent = parseFloat(temperatureValue).toFixed(1);
         });
 }
 
