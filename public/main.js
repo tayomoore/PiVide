@@ -56,6 +56,7 @@ function updateAllStatuses() {
             document.getElementById("targetTemperatureDisplay").textContent = parseFloat(data.targetTemperature).toFixed(1);
             document.getElementById("toleranceDisplay").textContent = parseFloat(data.tolerance).toFixed(1);
             document.getElementById("heatingRateDisplay").textContent = parseFloat(data.heatingRate).toFixed(1);
+            document.getElementById("coolingRateDisplay").textContent = parseFloat(data.coolingRate).toFixed(1);
         })
         .catch(error => {
             logToServer(`Error fetching statuses: ${error}`);
@@ -116,6 +117,22 @@ function setHeatingRate() {
         });
 }
 
+function setCoolingRate() {
+    const coolingRateValue = document.getElementById("coolingRateInput").value;
+    fetch("/coolingRate", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ coolingRate: parseFloat(coolingRateValue) })
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.message);
+            document.getElementById("coolingRateDisplay").textContent = parseFloat(coolingRateValue).toFixed(1);
+        });
+}
+
 // Event listeners
 document.getElementById("refreshValues").addEventListener("click", updateAllStatuses);
 document.getElementById("heaterOn").addEventListener("click", function() {controlHeat("on");});
@@ -124,6 +141,7 @@ document.getElementById("setTargetTemperature").addEventListener("click", contro
 document.getElementById("stopControlLoop").addEventListener("click", stopControlLoop);
 document.getElementById("setTolerance").addEventListener("click", updateTolerance);
 document.getElementById("setHeatingRate").addEventListener("click", setHeatingRate);
+document.getElementById("setCoolingRate").addEventListener("click", setCoolingRate);
 document.addEventListener("DOMContentLoaded", updateAllStatuses);
 
 

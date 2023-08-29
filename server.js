@@ -11,6 +11,7 @@ const app = express();
 const PORT = 3000;
 const SETPOINT_TOLERANCE_DEFAULT = 0.5; // degrees C either side of set point
 const HEATING_RATE_SECS_PER_DEGREE_DEFAULT = 115; // Default value in seconds per degree
+const COOLING_RATE_SECS_PER_DEGREE_DEFAULT = 450;  // seconds required to decrease 1°C
 const TEMPERATURE_CONTROL_LOOP_INTERVAL = 10; // seconds 
 const HEATER_RELAY = new GPIO(2, "out");
 HEATER_RELAY.writeSync(1);  // turn off heater immediately (GPIO pin is *on* by default)
@@ -25,6 +26,7 @@ let targetTemperature;  // The desired temperature to maintain
 let controlInterval;    // Reference to the temperature control loop interval
 let HEATING_RATE_SECS_PER_DEGREE = HEATING_RATE_SECS_PER_DEGREE_DEFAULT; // This will be the modifiable value
 let SETPOINT_TOLERANCE = SETPOINT_TOLERANCE_DEFAULT; // This will be the modifiable value
+let COOLING_RATE_SECS_PER_DEGREE = COOLING_RATE_SECS_PER_DEGREE_DEFAULT 
 
 
 // internal functions
@@ -52,33 +54,37 @@ async function logMessage(message){
     }
 }
 
+function calculateDifference(currentTemperature, targetTemperature) {
+    return parseFloat((currentTemperature - targetTemperature).toFixed(1));
+}
+
+function estimateTimeToReachSetpoint(currentTemperature, targetTemperature) {
+    const difference = calculateDifference(currentTemperature, targetTemperature);
+    const rate = difference < 0 ? HEATING_RATE_SECS_PER_DEGREE : COOLING_RATE_SECS_PER_DEGREE;
+    return Math.abs(difference) * rate;
+}
 
 async function evaluateTemperatureControl(targetTemp) {
-    const currentTemperature = parseFloat(await readTemperature());
-    const difference = parseFloat((currentTemperature - targetTemp).toFixed(1));
-    const distanceToEdgeOfDeadband = (difference >= 0) 
-        ? Math.abs(parseFloat((difference - SETPOINT_TOLERANCE).toFixed(1)))
-        : Math.abs(parseFloat((-difference - SETPOINT_TOLERANCE).toFixed(1)));
-    
-    const estimatedSecondsToReachSetpoint = (targetTemp - currentTemperature) * HEATING_RATE_SECS_PER_DEGREE;
-    const timeToPreemptivelyTurnOff = HEATING_RATE_SECS_PER_DEGREE * SETPOINT_TOLERANCE;
+    const currentTemperature = await readTemperature();
+    const difference = calculateDifference(currentTemperature, targetTemp);
+    const estimatedTimeToReachSetpoint = estimateTimeToReachSetpoint(currentTemperature, targetTemp);
+    const distanceToEdgeOfDeadband = Math.abs(difference) >= SETPOINT_TOLERANCE ? Math.abs(difference) - SETPOINT_TOLERANCE : 0;
 
-    if (difference < -SETPOINT_TOLERANCE) {
-        if (estimatedSecondsToReachSetpoint <= timeToPreemptivelyTurnOff) {
-            return {
-                action: "turnOff",
-                message: `Anticipating reaching target of ${targetTemp}°C in ${estimatedSecondsToReachSetpoint.toFixed(1)} seconds. Turning heater off in anticipation.`
-            };
-        } else {
-            return {
-                action: "turnOn",
-                message: `Target is ${targetTemp}°C, currently ${currentTemperature}°C, ${-difference}°C below threshold (heater on)`
-            };
-        }
+    // Anticipate overshooting
+    if (difference < -SETPOINT_TOLERANCE && estimatedTimeToReachSetpoint <= COOLING_RATE_SECS_PER_DEGREE * SETPOINT_TOLERANCE) {
+        return {
+            action: "turnOff",
+            message: `Anticipating reaching target of ${targetTemp}°C in ${estimatedTimeToReachSetpoint.toFixed(1)} seconds. Turning heater off in anticipation.`
+        };
+    } else if (difference < -SETPOINT_TOLERANCE) {
+        return {
+            action: "turnOn",
+            message: `Target is ${targetTemp}°C, currently ${currentTemperature}°C, ${distanceToEdgeOfDeadband}°C below threshold (heater on)`
+        };
     } else if (difference > SETPOINT_TOLERANCE) {
         return {
             action: "turnOff",
-            message: `Target is ${targetTemp}°C, currently ${currentTemperature}°C, ${difference}°C above threshold (heater off)`
+            message: `Target is ${targetTemp}°C, currently ${currentTemperature}°C, ${distanceToEdgeOfDeadband}°C above threshold (heater off)`
         };
     } else {
         return {
@@ -184,7 +190,8 @@ app.get("/status", async (req, res) => {
         targetTemperature: currentTargetTemperature,
         tolerance: currentTolerance,
         temperature: currentTemperatureValue,
-        heatingRate: HEATING_RATE_SECS_PER_DEGREE
+        heatingRate: HEATING_RATE_SECS_PER_DEGREE,
+        coolingRate: COOLING_RATE_SECS_PER_DEGREE
     });
 });
 
@@ -204,6 +211,11 @@ app.post("/heatingRate", (req, res) => {
     res.json({ success: true, message: `Heating rate updated successfully to ${HEATING_RATE_SECS_PER_DEGREE} secs/°C` });
 });
 
+app.post("/coolingRate", (req, res) => {
+    COOLING_RATE_SECS_PER_DEGREE = req.body.heatingRate;
+    logMessage(`Cooling rate updated to: ${COOLING_RATE_SECS_PER_DEGREE} secs/°C`);
+    res.json({ success: true, message: `Cooling rate updated successfully to ${COOLING_RATE_SECS_PER_DEGREE} secs/°C` });
+});
 
 // Cleanup code to release GPIO pins upon program exit
 function cleanupAndExit() {
