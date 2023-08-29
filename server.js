@@ -67,13 +67,13 @@ async function evaluateTemperatureControl(targetTemp) {
     const currentTemperature = await readTemperature();
     const difference = calculateDifference(currentTemperature, targetTemp);
     const estimatedTimeToReachSetpoint = estimateTimeToReachSetpoint(currentTemperature, targetTemp);
-    const distanceToEdgeOfDeadband = Math.abs(difference) >= SETPOINT_TOLERANCE ? Math.abs(difference) - SETPOINT_TOLERANCE : 0;
+    const distanceToEdgeOfDeadband = parseFloat((Math.abs(difference) >= SETPOINT_TOLERANCE ? Math.abs(difference) - SETPOINT_TOLERANCE : 0).toFixed(1));
 
     // Anticipate overshooting
     if (difference < -SETPOINT_TOLERANCE && estimatedTimeToReachSetpoint <= COOLING_RATE_SECS_PER_DEGREE * SETPOINT_TOLERANCE) {
         return {
             action: "turnOff",
-            message: `Anticipating reaching target of ${targetTemp}°C in ${estimatedTimeToReachSetpoint.toFixed(1)} seconds. Turning heater off in anticipation.`
+            message: `Target is ${targetTemp}°C, currently ${currentTemperature}°C, anticipating reaching target in ${estimatedTimeToReachSetpoint.toFixed(1)} seconds. Turning heater off in anticipation.`
         };
     } else if (difference < -SETPOINT_TOLERANCE) {
         return {
