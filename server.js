@@ -70,7 +70,7 @@ async function evaluateTemperatureControl(targetTemp) {
     const distanceToEdgeOfDeadband = parseFloat((Math.abs(difference) >= SETPOINT_TOLERANCE ? Math.abs(difference) - SETPOINT_TOLERANCE : 0).toFixed(1));
 
     // Anticipate overshooting
-    if (difference < -SETPOINT_TOLERANCE && estimatedTimeToReachSetpoint <= COOLING_RATE_SECS_PER_DEGREE * SETPOINT_TOLERANCE) {
+    if (difference < -SETPOINT_TOLERANCE && estimatedTimeToReachSetpoint <= HEATING_RATE_SECS_PER_DEGREE * SETPOINT_TOLERANCE) {
         return {
             action: "turnOff",
             message: `Target is ${targetTemp}°C, currently ${currentTemperature}°C, anticipating reaching target in ${estimatedTimeToReachSetpoint.toFixed(1)} seconds. Turning heater off in anticipation.`
