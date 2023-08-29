@@ -11,7 +11,7 @@ const app = express();
 const PORT = 3000;
 const SETPOINT_TOLERANCE_DEFAULT = 0.5; // degrees C either side of set point
 const HEATING_RATE_SECS_PER_DEGREE_DEFAULT = 115; // Default value in seconds per degree
-const COOLING_RATE_SECS_PER_DEGREE_DEFAULT = 450;  // seconds required to decrease 1°C
+const COOLING_RATE_SECS_PER_DEGREE_DEFAULT = 830;  // seconds required to decrease 1°C
 const TEMPERATURE_CONTROL_LOOP_INTERVAL = 10; // seconds 
 const HEATER_RELAY = new GPIO(2, "out");
 HEATER_RELAY.writeSync(1);  // turn off heater immediately (GPIO pin is *on* by default)
@@ -26,8 +26,7 @@ let targetTemperature;  // The desired temperature to maintain
 let controlInterval;    // Reference to the temperature control loop interval
 let HEATING_RATE_SECS_PER_DEGREE = HEATING_RATE_SECS_PER_DEGREE_DEFAULT; // This will be the modifiable value
 let SETPOINT_TOLERANCE = SETPOINT_TOLERANCE_DEFAULT; // This will be the modifiable value
-let COOLING_RATE_SECS_PER_DEGREE = COOLING_RATE_SECS_PER_DEGREE_DEFAULT 
-
+let COOLING_RATE_SECS_PER_DEGREE = COOLING_RATE_SECS_PER_DEGREE_DEFAULT;
 
 // internal functions
 function readTemperature() {
