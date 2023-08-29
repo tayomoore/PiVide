@@ -10,7 +10,7 @@ require("dotenv").config();
 const app = express();
 const PORT = 3000;
 const SETPOINT_TOLERANCE_DEFAULT = 0.5; // degrees C either side of set point
-const HEATING_RATE_SECS_PER_DEGREE_DEFAULT = 300; // Default value in seconds per degree
+const HEATING_RATE_SECS_PER_DEGREE_DEFAULT = 115; // Default value in seconds per degree
 const TEMPERATURE_CONTROL_LOOP_INTERVAL = 10; // seconds 
 const HEATER_RELAY = new GPIO(2, "out");
 HEATER_RELAY.writeSync(1);  // turn off heater immediately (GPIO pin is *on* by default)
@@ -61,9 +61,10 @@ async function evaluateTemperatureControl(targetTemp) {
         : Math.abs(parseFloat((-difference - SETPOINT_TOLERANCE).toFixed(1)));
     
     const estimatedSecondsToReachSetpoint = (targetTemp - currentTemperature) * HEATING_RATE_SECS_PER_DEGREE;
-    
+    const timeToPreemptivelyTurnOff = HEATING_RATE_SECS_PER_DEGREE * SETPOINT_TOLERANCE;
+
     if (difference < -SETPOINT_TOLERANCE) {
-        if (estimatedSecondsToReachSetpoint <= TEMPERATURE_CONTROL_LOOP_INTERVAL) {
+        if (estimatedSecondsToReachSetpoint <= timeToPreemptivelyTurnOff) {
             return {
                 action: "turnOff",
                 message: `Anticipating reaching target of ${targetTemp}°C in ${estimatedSecondsToReachSetpoint.toFixed(1)} seconds. Turning heater off in anticipation.`
@@ -86,6 +87,7 @@ async function evaluateTemperatureControl(targetTemp) {
         };
     }
 }
+
 
 // external endpoints
 app.get("/temperature", async (req, res) => {
