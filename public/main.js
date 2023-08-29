@@ -1,20 +1,6 @@
 const UPDATE_INTERVAL = 3000; // milliseconds
 
 // Functions
-function updateTemperature() {
-    fetch("/temperature")
-        .then(response => response.json())
-        .then(data => {
-            const formattedTemperature = parseFloat(data.temperature).toFixed(1);
-            document.getElementById("temperature").textContent = formattedTemperature;
-        })
-        .catch(error => {
-            logToServer(`Error fetching temperature: ${error}`);
-            document.getElementById("temperature").textContent = "Error: " + error.message;
-        });
-}
-
-
 function controlHeat(command) {
     fetch("/heater", {
         method: "POST",
@@ -64,10 +50,12 @@ function updateAllStatuses() {
     fetch("/status")
         .then(response => response.json())
         .then(data => {
-            document.getElementById("heaterState").textContent = data.heaterState;
-            document.getElementById("controlState").textContent = data.controlState;
-            document.getElementById("setTargetTemperatureDisplay").textContent = parseFloat(data.targetTemperature).toFixed(1);
             document.getElementById("temperature").textContent = parseFloat(data.temperature).toFixed(1);
+            document.getElementById("controlState").textContent = data.controlState;
+            document.getElementById("heaterState").textContent = data.heaterState;
+            document.getElementById("targetTemperatureDisplay").textContent = parseFloat(data.targetTemperature).toFixed(1);
+            document.getElementById("toleranceDisplay").textContent = parseFloat(data.tolerance).toFixed(1);
+            document.getElementById("heatingRateDisplay").textContent = parseFloat(data.heatingRate).toFixed(1);
         })
         .catch(error => {
             logToServer(`Error fetching statuses: ${error}`);
@@ -84,17 +72,6 @@ function logToServer(message) {
     })
         .catch(error => {
             console.error("Failed to log to server:", error);
-        });
-}
-
-function fetchAndDisplayTolerance() {
-    fetch("/tolerance")
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById("toleranceInput").value = data.tolerance;
-        })
-        .catch(error => {
-            logToServer("Error fetching tolerance: " + error.message);
         });
 }
 
@@ -123,18 +100,31 @@ function updateTolerance() {
         });
 }
 
+function setHeatingRate() {
+    const heatingRateValue = document.getElementById("heatingRateInput").value;
+    fetch("/heatingRate", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ heatingRate: parseFloat(heatingRateValue) })
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.message);
+            document.getElementById("heatingRateDisplay").textContent = parseFloat(heatingRateValue).toFixed(1);
+        });
+}
 
 // Event listeners
-document.getElementById("refreshTemperature").addEventListener("click", updateTemperature);
+document.getElementById("refreshValues").addEventListener("click", updateAllStatuses);
 document.getElementById("heaterOn").addEventListener("click", function() {controlHeat("on");});
 document.getElementById("heaterOff").addEventListener("click", function() {controlHeat("off");});
 document.getElementById("setTargetTemperature").addEventListener("click", controlSetpoint);
 document.getElementById("stopControlLoop").addEventListener("click", stopControlLoop);
 document.getElementById("setTolerance").addEventListener("click", updateTolerance);
-document.addEventListener("DOMContentLoaded", function() {
-    updateAllStatuses();
-    fetchAndDisplayTolerance();
-});
+document.getElementById("setHeatingRate").addEventListener("click", setHeatingRate);
+document.addEventListener("DOMContentLoaded", updateAllStatuses);
 
 
 // Set auto updates

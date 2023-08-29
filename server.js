@@ -6,21 +6,25 @@ const bodyParser = require("body-parser");
 const fsPromises = require("fs").promises;
 require("dotenv").config();
 
-// Set things up
+// constants
 const app = express();
 const PORT = 3000;
-const SETPOINT_TOLERANCE_DEFAULT = 1.0; // degrees C either side of set point
-let SETPOINT_TOLERANCE = SETPOINT_TOLERANCE_DEFAULT; // This will be the modifiable value
+const SETPOINT_TOLERANCE_DEFAULT = 0.5; // degrees C either side of set point
+const HEATING_RATE_SECS_PER_DEGREE_DEFAULT = 300; // Default value in seconds per degree
 const TEMPERATURE_CONTROL_LOOP_INTERVAL = 10; // seconds 
 const HEATER_RELAY = new GPIO(2, "out");
 HEATER_RELAY.writeSync(1);  // turn off heater immediately (GPIO pin is *on* by default)
 const SENSOR_ID = process.env.DS18B20_SENSOR_ID;
+
+// middleware setup
 app.use(express.static("public"));
 app.use(bodyParser.json());
 
 // Global state variables
 let targetTemperature;  // The desired temperature to maintain
 let controlInterval;    // Reference to the temperature control loop interval
+let HEATING_RATE_SECS_PER_DEGREE = HEATING_RATE_SECS_PER_DEGREE_DEFAULT; // This will be the modifiable value
+let SETPOINT_TOLERANCE = SETPOINT_TOLERANCE_DEFAULT; // This will be the modifiable value
 
 
 // internal functions
@@ -48,6 +52,7 @@ async function logMessage(message){
     }
 }
 
+
 async function evaluateTemperatureControl(targetTemp) {
     const currentTemperature = parseFloat(await readTemperature());
     const difference = parseFloat((currentTemperature - targetTemp).toFixed(1));
@@ -55,11 +60,20 @@ async function evaluateTemperatureControl(targetTemp) {
         ? Math.abs(parseFloat((difference - SETPOINT_TOLERANCE).toFixed(1)))
         : Math.abs(parseFloat((-difference - SETPOINT_TOLERANCE).toFixed(1)));
     
+    const estimatedSecondsToReachSetpoint = (targetTemp - currentTemperature) * HEATING_RATE_SECS_PER_DEGREE;
+    
     if (difference < -SETPOINT_TOLERANCE) {
-        return {
-            action: "turnOn",
-            message: `Target is ${targetTemp}°C, currently ${currentTemperature}°C, ${-difference}°C below threshold (heater on)`
-        };
+        if (estimatedSecondsToReachSetpoint <= TEMPERATURE_CONTROL_LOOP_INTERVAL) {
+            return {
+                action: "turnOff",
+                message: `Anticipating reaching target of ${targetTemp}°C in ${estimatedSecondsToReachSetpoint.toFixed(1)} seconds. Turning heater off in anticipation.`
+            };
+        } else {
+            return {
+                action: "turnOn",
+                message: `Target is ${targetTemp}°C, currently ${currentTemperature}°C, ${-difference}°C below threshold (heater on)`
+            };
+        }
     } else if (difference > SETPOINT_TOLERANCE) {
         return {
             action: "turnOff",
@@ -147,6 +161,7 @@ app.get("/status", async (req, res) => {
     let controlStateMessage = "Off";
     let currentTemperatureValue;
     const currentTargetTemperature = targetTemperature || 0;
+    const currentTolerance = SETPOINT_TOLERANCE;
 
     try {
         currentTemperatureValue = await readTemperature();
@@ -165,12 +180,10 @@ app.get("/status", async (req, res) => {
         heaterState,
         controlState: controlStateMessage,
         targetTemperature: currentTargetTemperature,
-        temperature: currentTemperatureValue
+        tolerance: currentTolerance,
+        temperature: currentTemperatureValue,
+        heatingRate: HEATING_RATE_SECS_PER_DEGREE
     });
-});
-
-app.get("/tolerance", (req, res) => {
-    res.json({ tolerance: SETPOINT_TOLERANCE });
 });
 
 app.post("/tolerance", (req, res) => {
@@ -182,6 +195,13 @@ app.post("/tolerance", (req, res) => {
         res.status(400).json({ success: false, message: `Invalid tolerance value ${tolerance}` });
     }
 });
+
+app.post("/heatingRate", (req, res) => {
+    HEATING_RATE_SECS_PER_DEGREE = req.body.heatingRate;
+    logMessage(`Heating rate updated to: ${HEATING_RATE_SECS_PER_DEGREE} secs/°C`);
+    res.json({ success: true, message: `Heating rate updated successfully to ${HEATING_RATE_SECS_PER_DEGREE} secs/°C` });
+});
+
 
 // Cleanup code to release GPIO pins upon program exit
 function cleanupAndExit() {

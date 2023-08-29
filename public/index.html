@@ -13,14 +13,14 @@
     <h1>PiVide Control</h1>
     <p>Current Temperature: <span id="temperature" aria-label="Current Temperature">Loading...</span>°C</p>
     <input type="number" id="targetTemperatureInput" placeholder="Enter target temperature">
-    <p>Set Target Temperature: <span id="setTargetTemperatureDisplay">N/A</span>°C</p>
+    <p>Set Target Temperature: <span id="targetTemperatureDisplay">N/A</span>°C</p>
     <button id="setTargetTemperature" aria-label="Set Target Temperature">Start Temperature Control</button>
     <button id="stopControlLoop" aria-label="Stop Control Loop">Stop Temperature Control</button>
     <br>
     <p>Heater State: <span id="heaterState" aria-label="Heater State">Unknown</span></p>
     <p>Temperature Control State: <span id="controlState" aria-label="Temperature Control State">Unknown</span></p>
     <br>
-    <button id="refreshTemperature" aria-label="Refresh Temperature">Refresh Temperature</button>
+    <button id="refreshValues" aria-label="Refresh Values">Refresh Values</button>
     <br>
     <br>
     <button id="heaterOn" aria-label="Turn Heater On">Turn Heater On</button>
@@ -31,7 +31,12 @@
         <input type="number" id="toleranceInput" step="0.1" min="0.1">
         <button id="setTolerance">Set Tolerance</button>
     </p>
-    
+    <p>Current Setpoint Tolerance: <span id="toleranceDisplay">Loading...</span> secs/°C</p>
+    <br>
+    <input type="number" id="heatingRateInput" placeholder="Enter heating rate (secs/°C)">
+    <button id="setHeatingRate">Set Heating Rate</button>
+    <p>Current Heating Rate: <span id="heatingRateDisplay">Loading...</span> secs/°C</p>
+        
 </body>
 
 </html>
