@@ -75,7 +75,6 @@ async function logTemperature() {
     }
 }
 
-
 async function evaluateTemperatureControl(targetTemp) {
     const currentTemperature = await readTemperature();
     const difference = calculateDifference(currentTemperature, targetTemp);
