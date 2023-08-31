@@ -65,10 +65,14 @@ function estimateTimeToReachSetpoint(currentTemperature, targetTemperature) {
 }
 
 async function logTemperature() {
-    loggingInterval = setInterval(async () => {
+    try {
         const currentTemperature = await readTemperature();
         await logMessage(`Current temperature: ${currentTemperature}`);
-    }, 1000);
+        setTimeout(logTemperature, 1000);
+    } catch (error) {
+        console.error(`Error logging temperature: ${error}`);
+        setTimeout(logTemperature, 1000);
+    }
 }
 
 
