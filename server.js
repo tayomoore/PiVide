@@ -24,6 +24,7 @@ app.use(bodyParser.json());
 // Global state variables
 let targetTemperature;  // The desired temperature to maintain
 let controlInterval;    // Reference to the temperature control loop interval
+let loggingInterval;    // reference to the temperature logging interval
 let HEATING_RATE_SECS_PER_DEGREE = HEATING_RATE_SECS_PER_DEGREE_DEFAULT; // This will be the modifiable value
 let SETPOINT_TOLERANCE = SETPOINT_TOLERANCE_DEFAULT; // This will be the modifiable value
 let COOLING_RATE_SECS_PER_DEGREE = COOLING_RATE_SECS_PER_DEGREE_DEFAULT;
@@ -62,6 +63,14 @@ function estimateTimeToReachSetpoint(currentTemperature, targetTemperature) {
     const rate = difference < 0 ? HEATING_RATE_SECS_PER_DEGREE : COOLING_RATE_SECS_PER_DEGREE;
     return Math.abs(difference) * rate;
 }
+
+async function logTemperature() {
+    loggingInterval = setInterval(async () => {
+        const currentTemperature = await readTemperature();
+        await logMessage(`Current temperature: ${currentTemperature}`);
+    }, 1000);
+}
+
 
 async function evaluateTemperatureControl(targetTemp) {
     const currentTemperature = await readTemperature();
@@ -221,12 +230,15 @@ function cleanupAndExit() {
     if (controlInterval) {
         clearInterval(controlInterval);
     }
+    if (loggingInterval) {
+        clearInterval(loggingInterval);
+    }
     HEATER_RELAY.writeSync(1);
     HEATER_RELAY.unexport();
 
-    logMessage("Released the GPIO pin and cleared the interval. Exiting now...")
+    logMessage("Released the GPIO pin and cleared the timers. Exiting now...")
         .then(() => {
-            console.log("Released the GPIO pin and cleared the intervals. Exiting now...");
+            console.log("Released the GPIO pin and cleared the timers. Exiting now...");
             process.exit(0);
         })
         .catch(err => {
@@ -242,3 +254,5 @@ process.on("SIGTERM", cleanupAndExit); // Handling SIGTERM for graceful shutdown
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+logTemperature();
