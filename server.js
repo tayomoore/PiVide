@@ -46,7 +46,7 @@ function readTemperature() {
 async function logMessage(message){
     try {
         const logEntry = `${new Date().toISOString()}: ${message}\n`;
-        await fsPromises.appendFile("log.txt", logEntry);
+        await fsPromises.appendFile("/public/log.txt", logEntry);
         return true;
     } catch (error) {
         console.error(`Error logging message: ${error}`);
