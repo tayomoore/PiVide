@@ -124,6 +124,7 @@ async function evaluateTemperatureControl(targetTemp) {
         };
     }
 }
+}
 
 // In your control loop, decrement the timeLeftInHeatingInertia
 controlInterval = setInterval(async () => {
