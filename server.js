@@ -43,7 +43,7 @@ function readTemperature() {
     });
 }
 
-async function logMessage(message){
+async function logMessage(message) {
     try {
         const logEntry = `${new Date().toISOString()}: ${message}\n`;
         await fsPromises.appendFile("/public/log.txt", logEntry);
@@ -76,65 +76,65 @@ async function logTemperature() {
 }
 
 async function evaluateTemperatureControl(targetTemp) {
-// Constants and variables
-let timeLeftInHeatingInertia = 0;
-const HEATER_GAIN = 1/HEATING_RATE_SECS_PER_DEGREE; // Define the heater's gain (inverse of the seconds/degree to get deg/sec)
-const HEATING_INERTIA_DURATION = 450; // Define the duration for heating inertia (the time the system takes to react to the heater being turned off)
-const CONTROL_LOOP_INTERVAL = 5; // Define the control loop interval in seconds
+    // Constants and variables
+    let timeLeftInHeatingInertia = 0;
+    const HEATER_GAIN = 1 / HEATING_RATE_SECS_PER_DEGREE; // Define the heater's gain (inverse of the seconds/degree to get deg/sec)
+    const HEATING_INERTIA_DURATION = 450; // Define the duration for heating inertia (the time the system takes to react to the heater being turned off)
+    const CONTROL_LOOP_INTERVAL = 5; // Define the control loop interval in seconds
 
-async function evaluateTemperatureControl(targetTemp) {
-    const currentTemperature = await readTemperature();
-    const maxTemperatureRiseIfHeaterTurnedOffNow = HEATER_GAIN * HEATING_INERTIA_DURATION;
-    const temperatureIfHeaterTurnedOffNow = currentTemperature + maxTemperatureRiseIfHeaterTurnedOffNow;
+    async function evaluateTemperatureControl(targetTemp) {
+        const currentTemperature = await readTemperature();
+        const maxTemperatureRiseIfHeaterTurnedOffNow = HEATER_GAIN * HEATING_INERTIA_DURATION;
+        const temperatureIfHeaterTurnedOffNow = currentTemperature + maxTemperatureRiseIfHeaterTurnedOffNow;
 
-    const upperThreshold = targetTemp + SETPOINT_TOLERANCE;
-    const lowerThreshold = targetTemp - SETPOINT_TOLERANCE;
+        const upperThreshold = targetTemp + SETPOINT_TOLERANCE;
+        const lowerThreshold = targetTemp - SETPOINT_TOLERANCE;
 
-    if (timeLeftInHeatingInertia > 0) {
-        return {
-            action: "doNothing",
-            message: `Heater inertia in effect for ${timeLeftInHeatingInertia} seconds`
-        };
-    } else if (currentTemperature < lowerThreshold && temperatureIfHeaterTurnedOffNow < upperThreshold) {
-        return {
-            action: "turnOn",
-            message: `Current temperature below lower threshold, and shouldn't overshoot, heater turned on`
-        };
-    } else if (currentTemperature < lowerThreshold && temperatureIfHeaterTurnedOffNow >= upperThreshold) {
-        timeLeftInHeatingInertia = HEATING_INERTIA_DURATION;
-        return {
-            action: "turnOff",
-            message: `Anticipating overshoot, heater turned off, setting heating inertia blockout`
-        };
-    } else if (currentTemperature > upperThreshold) {
-        return {
-            action: "turnOff",
-            message: `Current temperature above upper threshold, heater turned off`
-        };
-    } else if (currentTemperature > lowerThreshold && temperatureIfHeaterTurnedOffNow < upperThreshold) {
-        return {
-            action: "turnOn",
-            message: `Current temperature within tolerance band and shouldn't overshoot, heater turned on`
-        };
-    } else if (currentTemperature > lowerThreshold && temperatureIfHeaterTurnedOffNow > upperThreshold) {
-        timeLeftInHeatingInertia = HEATING_INERTIA_DURATION;
-        return {
-            action: "turnOff",
-            message: `Anticipating overshoot, heater turned off`
-        };
+        if (timeLeftInHeatingInertia > 0) {
+            return {
+                action: "doNothing",
+                message: `Heater inertia in effect for ${timeLeftInHeatingInertia} seconds`
+            };
+        } else if (currentTemperature < lowerThreshold && temperatureIfHeaterTurnedOffNow < upperThreshold) {
+            return {
+                action: "turnOn",
+                message: `Current temperature below lower threshold, and shouldn't overshoot, heater turned on`
+            };
+        } else if (currentTemperature < lowerThreshold && temperatureIfHeaterTurnedOffNow >= upperThreshold) {
+            timeLeftInHeatingInertia = HEATING_INERTIA_DURATION;
+            return {
+                action: "turnOff",
+                message: `Anticipating overshoot, heater turned off, setting heating inertia blockout`
+            };
+        } else if (currentTemperature > upperThreshold) {
+            return {
+                action: "turnOff",
+                message: `Current temperature above upper threshold, heater turned off`
+            };
+        } else if (currentTemperature > lowerThreshold && temperatureIfHeaterTurnedOffNow < upperThreshold) {
+            return {
+                action: "turnOn",
+                message: `Current temperature within tolerance band and shouldn't overshoot, heater turned on`
+            };
+        } else if (currentTemperature > lowerThreshold && temperatureIfHeaterTurnedOffNow > upperThreshold) {
+            timeLeftInHeatingInertia = HEATING_INERTIA_DURATION;
+            return {
+                action: "turnOff",
+                message: `Anticipating overshoot, heater turned off`
+            };
+        }
     }
+
+
+    // In your control loop, decrement the timeLeftInHeatingInertia
+    controlInterval = setInterval(async () => {
+        // ... the rest of your control loop logic ...
+
+        if (timeLeftInHeatingInertia > 0) {
+            timeLeftInHeatingInertia -= CONTROL_LOOP_INTERVAL;
+        }
+    }, CONTROL_LOOP_INTERVAL * 1000);
 }
-}
-
-// In your control loop, decrement the timeLeftInHeatingInertia
-controlInterval = setInterval(async () => {
-    // ... the rest of your control loop logic ...
-
-    if (timeLeftInHeatingInertia > 0) {
-        timeLeftInHeatingInertia -= CONTROL_LOOP_INTERVAL;
-    }
-}, CONTROL_LOOP_INTERVAL * 1000);
-
 
 
 // external endpoints
@@ -201,7 +201,7 @@ app.post("/control", async (req, res) => {
             console.error(`Error in control loop: ${error}`);
         }
     }, (TEMPERATURE_CONTROL_LOOP_INTERVAL * 1000));
-    
+
 
     res.json({ message: "Temperature set and control loop started" });
 });
