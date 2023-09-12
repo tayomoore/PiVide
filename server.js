@@ -204,7 +204,7 @@ async function eventLoop() {
 
     else {
         try {
-            await logMessage(`Reached a state with no actions|State: ${CONTROL_STATE}|Current Temp: ${currentTemperature}|Target temp: ${targetTemperature}|Tmax: ${maxTemperatureRiseIfHeaterTurnedOffNow}|Time in waiting phase: ${timeLeftInWaitingPhase}`)
+            await logMessage(`Reached a state with no actions|State: ${CONTROL_STATE}|Current Temp: ${currentTemperature}|Target temp: ${targetTemperature}|Tmax: ${temperatureIfHeaterTurnedOffNow}|Time in waiting phase: ${timeLeftInWaitingPhase}`)
         } catch (error) {
             console.error(`Error writing to log ${error}`)
         }
