@@ -39,7 +39,7 @@ function readTemperature() {
                 console.error(`Error reading temperature: ${err}`);
                 reject("Error");
             } else {
-                resolve(value.toString());
+                resolve(value);
             }
         });
     });
