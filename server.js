@@ -72,8 +72,8 @@ async function eventLoop() {
     const HEATING_INERTIA_DURATION = 450; // Define the duration for heating inertia (the time the system takes to react to the heater being turned off)
     const SMALL_HEAT_BURST_DURATION = 120 // 2 mins
     const LARGE_HEAT_BURST_DURATION = 180 // 3 mins
-    const upperThreshold = targetTemp + SETPOINT_TOLERANCE;
-    const lowerThreshold = targetTemp - SETPOINT_TOLERANCE;
+    const upperThreshold = targetTemperature + SETPOINT_TOLERANCE;
+    const lowerThreshold = targetTemperature - SETPOINT_TOLERANCE;
     const maxTemperatureRiseIfHeaterTurnedOffNow = HEATER_GAIN * HEATING_INERTIA_DURATION;
     const temperatureIfHeaterTurnedOffNow = currentTemperature + maxTemperatureRiseIfHeaterTurnedOffNow;
     let timeLeftInWaitingPhase = 0;
@@ -98,6 +98,15 @@ async function eventLoop() {
             console.error(`Error writing to log ${error}`)
         }
         timeLeftInWaitingPhase -= EVENT_LOOP_INTERVAL
+    }
+
+    // no setpoint set
+    else if (CONTROL_STATE == "Off" && !targetTemperature){
+        try {
+            await logMessage(`${CONTROL_STATE}`);
+        } catch (error) {
+            console.error(`Error writing to log ${error}`)
+        }
     }
 
     // if a setpoint has been set, transition into an "on" state
@@ -306,6 +315,7 @@ app.post("/heater", async (req, res) => {
 app.post("/setpoint", async (req, res) => {
     targetTemperature = req.body.temperature;
 
+    /*
     controlInterval = setInterval(async () => {
         try {
             const { action, message } = await evaluateTemperatureControl(targetTemperature);
@@ -319,9 +329,10 @@ app.post("/setpoint", async (req, res) => {
             console.error(`Error in control loop: ${error}`);
         }
     }, (TEMPERATURE_CONTROL_LOOP_INTERVAL * 1000));
+    */
 
 
-    res.json({ message: "Temperature set and control loop started" });
+    res.json({ message: "Temperature set" });
 });
 
 app.get("/status", async (req, res) => {

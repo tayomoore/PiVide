@@ -18,6 +18,21 @@ function controlHeat(command) {
         });
 }
 
+function setSetpoint() {
+    const temperatureValue = document.getElementById("targetTemperatureInput").value;
+    fetch("/setpoint", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ temperature: parseFloat(temperatureValue) })
+    })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("targetTemperatureDisplay").textContent = parseFloat(temperatureValue).toFixed(1);
+        });
+}
+
 function controlSetpoint() {
     const temperatureValue = document.getElementById("targetTemperatureInput").value;
     fetch("/control", {
@@ -135,13 +150,14 @@ function setCoolingRate() {
 
 // Event listeners
 document.getElementById("refreshValues").addEventListener("click", updateAllStatuses);
-document.getElementById("heaterOn").addEventListener("click", function() {controlHeat("on");});
-document.getElementById("heaterOff").addEventListener("click", function() {controlHeat("off");});
+document.getElementById("heaterOn").addEventListener("click", function () { controlHeat("on"); });
+document.getElementById("heaterOff").addEventListener("click", function () { controlHeat("off"); });
 document.getElementById("setTargetTemperature").addEventListener("click", controlSetpoint);
 document.getElementById("stopControlLoop").addEventListener("click", stopControlLoop);
 document.getElementById("setTolerance").addEventListener("click", updateTolerance);
 document.getElementById("setHeatingRate").addEventListener("click", setHeatingRate);
 document.getElementById("setCoolingRate").addEventListener("click", setCoolingRate);
+document.getElementById("setSetpoint").addEventListener("click", setSetpoint);
 document.addEventListener("DOMContentLoaded", updateAllStatuses);
 
 
