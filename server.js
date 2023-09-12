@@ -29,6 +29,7 @@ let SETPOINT_TOLERANCE = SETPOINT_TOLERANCE_DEFAULT; // This will be the modifia
 let CONTROL_STATE = "Off" // state of control loop
 let HEATING_RATE_SECS_PER_DEGREE = HEATING_RATE_SECS_PER_DEGREE_DEFAULT; // This will be the modifiable value
 let COOLING_RATE_SECS_PER_DEGREE = COOLING_RATE_SECS_PER_DEGREE_DEFAULT;
+let timeLeftInWaitingPhase = 0;
 
 
 // internal functions
@@ -76,7 +77,6 @@ async function eventLoop() {
     const lowerThreshold = targetTemperature - SETPOINT_TOLERANCE;
     const maxTemperatureRiseIfHeaterTurnedOffNow = HEATER_GAIN * HEATING_INERTIA_DURATION;
     const temperatureIfHeaterTurnedOffNow = currentTemperature + maxTemperatureRiseIfHeaterTurnedOffNow;
-    let timeLeftInWaitingPhase = 0;
 
     // log current temperature
     try {
