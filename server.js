@@ -212,69 +212,6 @@ async function eventLoop() {
     setTimeout(eventLoop, EVENT_LOOP_INTERVAL * 1000); // milliseconds
 }
 
-/*
-async function evaluateTemperatureControl(targetTemp) {
-    // Constants and variables
-    let timeLeftInWaitingPhase = 0;
-    const HEATER_GAIN = 1 / HEATING_RATE_SECS_PER_DEGREE; // Define the heater's gain (inverse of the seconds/degree to get deg/sec)
-    const HEATING_INERTIA_DURATION = 450; // Define the duration for heating inertia (the time the system takes to react to the heater being turned off)
-    const CONTROL_LOOP_INTERVAL = 5; // Define the control loop interval in seconds
-
-    async function evaluateTemperatureControl(targetTemp) {
-        const currentTemperature = await readTemperature();
-        const maxTemperatureRiseIfHeaterTurnedOffNow = HEATER_GAIN * HEATING_INERTIA_DURATION;
-        const temperatureIfHeaterTurnedOffNow = currentTemperature + maxTemperatureRiseIfHeaterTurnedOffNow;
-
-        const upperThreshold = targetTemp + SETPOINT_TOLERANCE;
-        const lowerThreshold = targetTemp - SETPOINT_TOLERANCE;
-
-        if (timeLeftInWaitingPhase > 0) {
-            return {
-                action: "doNothing",
-                message: `Heater inertia in effect for ${timeLeftInWaitingPhase} seconds`
-            };
-        } else if (currentTemperature < lowerThreshold && temperatureIfHeaterTurnedOffNow < upperThreshold) {
-            return {
-                action: "turnOn",
-                message: `Current temperature below lower threshold, and shouldn't overshoot, heater turned on`
-            };
-        } else if (currentTemperature < lowerThreshold && temperatureIfHeaterTurnedOffNow >= upperThreshold) {
-            timeLeftInWaitingPhase = HEATING_INERTIA_DURATION;
-            return {
-                action: "turnOff",
-                message: `Anticipating overshoot, heater turned off, setting heating inertia blockout`
-            };
-        } else if (currentTemperature > upperThreshold) {
-            return {
-                action: "turnOff",
-                message: `Current temperature above upper threshold, heater turned off`
-            };
-        } else if (currentTemperature > lowerThreshold && temperatureIfHeaterTurnedOffNow < upperThreshold) {
-            return {
-                action: "turnOn",
-                message: `Current temperature within tolerance band and shouldn't overshoot, heater turned on`
-            };
-        } else if (currentTemperature > lowerThreshold && temperatureIfHeaterTurnedOffNow > upperThreshold) {
-            timeLeftInWaitingPhase = HEATING_INERTIA_DURATION;
-            return {
-                action: "turnOff",
-                message: `Anticipating overshoot, heater turned off`
-            };
-        }
-    }
-
-
-    // In your control loop, decrement the timeLeftInWaitingPhase
-    controlInterval = setInterval(async () => {
-        // ... the rest of your control loop logic ...
-
-        if (timeLeftInWaitingPhase > 0) {
-            timeLeftInWaitingPhase -= CONTROL_LOOP_INTERVAL;
-        }
-    }, CONTROL_LOOP_INTERVAL * 1000);
-}
-*/
-
 
 // external endpoints
 app.get("/temperature", async (req, res) => {
@@ -313,26 +250,9 @@ app.post("/heater", async (req, res) => {
 });
 
 app.post("/setpoint", async (req, res) => {
-    targetTemperature = req.body.temperature;
-
-    /*
-    controlInterval = setInterval(async () => {
-        try {
-            const { action, message } = await evaluateTemperatureControl(targetTemperature);
-            await logMessage(message);
-            if (action === "turnOn") {
-                HEATER_RELAY.writeSync(0);
-            } else if (action === "turnOff") {
-                HEATER_RELAY.writeSync(1);
-            }
-        } catch (error) {
-            console.error(`Error in control loop: ${error}`);
-        }
-    }, (TEMPERATURE_CONTROL_LOOP_INTERVAL * 1000));
-    */
-
-
-    res.json({ message: "Temperature set" });
+        targetTemperature = req.body.temperature;
+        CONTROL_STATE = "Off"
+        res.json({ message: "Temperature set" });
 });
 
 app.get("/status", async (req, res) => {

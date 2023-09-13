@@ -33,6 +33,20 @@ function setSetpoint() {
         });
 }
 
+function clearSetpoint() {
+    fetch("/setpoint", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ temperature: null })
+    })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("targetTemperatureDisplay").textContent = "N/A";
+        });
+}
+
 function controlSetpoint() {
     const temperatureValue = document.getElementById("targetTemperatureInput").value;
     fetch("/control", {
@@ -158,6 +172,7 @@ document.getElementById("setTolerance").addEventListener("click", updateToleranc
 document.getElementById("setHeatingRate").addEventListener("click", setHeatingRate);
 document.getElementById("setCoolingRate").addEventListener("click", setCoolingRate);
 document.getElementById("setSetpoint").addEventListener("click", setSetpoint);
+document.getElementById("clearSetpoint").addEventListener("click", clearSetpoint);
 document.addEventListener("DOMContentLoaded", updateAllStatuses);
 
 
