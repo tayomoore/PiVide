@@ -4,6 +4,7 @@ const ds18b20 = require("ds18b20");
 const GPIO = require("onoff").Gpio;
 const bodyParser = require("body-parser");
 const fsPromises = require("fs").promises;
+const { Client } = require('pg');
 require("dotenv").config();
 
 // Constants
@@ -16,6 +17,15 @@ const EVENT_LOOP_INTERVAL = 10; // seconds
 const HEATER_RELAY = new GPIO(2, "out");
 HEATER_RELAY.writeSync(1);  // turn off heater immediately (GPIO pin is *on* by default)
 const SENSOR_ID = process.env.DS18B20_SENSOR_ID;
+
+// db setup
+const client = new Client({
+    host: 'localhost',
+    database: 'pivide',
+    user: process.env.dbuser,
+    password: process.env.dbpassword,
+    port: 5432
+});
 
 // Middleware setup
 app.use(express.static("public"));
@@ -33,6 +43,60 @@ let timeLeftInWaitingPhase = 0;
 
 
 // internal functions
+async function connectToDatabase() {
+    try {
+        await client.connect(); // This is an asynchronous operation
+        console.log('Connected to the database');
+        return true;
+    } catch (err) {
+        console.error('Error connecting to the database:', err);
+        return false;
+    }
+}
+
+async function sendToDB(type, data) {
+    let query;
+    let values;
+    try {
+        query = generateInsertQuery(type, data);
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+
+    try {
+        values = generateInsertValues(type, data);
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+
+    try {
+        client.query(query, values);
+    } catch (error) {
+        console.log(error)
+        throw error
+    }
+}
+
+function generateInsertQuery(type) {
+    switch (type) {
+        case "temperature":
+            return "INSERT INTO temperatures(temperature) VALUES($1)";
+        default:
+            throw "No matching insert type"
+    }
+}
+
+function generateInsertValues(type, data) {
+    switch (type) {
+        case "temperature":
+            return [data]
+        default:
+            throw "No matching insert type"
+    }
+}
+
 function readTemperature() {
     return new Promise((resolve, reject) => {
         ds18b20.temperature(SENSOR_ID, (err, value) => {
@@ -75,6 +139,12 @@ async function eventLoop() {
         console.error(`Error logging temperature: ${error}`);
     }
 
+    try {
+        await sendToDB("temperature", currentTemperature);
+    } catch (error) {
+        console.error(`Error inserting temperature into DB: ${error}`);
+    }
+
     //
     // control loop
     //
@@ -91,7 +161,7 @@ async function eventLoop() {
     }
 
     // no setpoint set
-    else if (CONTROL_STATE == "Off" && !targetTemperature){
+    else if (CONTROL_STATE == "Off" && !targetTemperature) {
         try {
             await logMessage(`${CONTROL_STATE}`);
         } catch (error) {
@@ -167,7 +237,7 @@ async function eventLoop() {
         }
     }
 
-    else if (CONTROL_STATE == "Control Phase" && currentTemperature < lowerThreshold){
+    else if (CONTROL_STATE == "Control Phase" && currentTemperature < lowerThreshold) {
         const PREVIOUS_STATE = CONTROL_STATE
         CONTROL_STATE = "Large Heat Burst"
         HEATER_RELAY.writeSync(0);  // turn on heater
@@ -240,9 +310,9 @@ app.post("/heater", async (req, res) => {
 });
 
 app.post("/setpoint", async (req, res) => {
-        targetTemperature = req.body.temperature;
-        CONTROL_STATE = "Off"
-        res.json({ message: "Temperature set" });
+    targetTemperature = req.body.temperature;
+    CONTROL_STATE = "Off"
+    res.json({ message: "Temperature set" });
 });
 
 app.get("/status", async (req, res) => {
@@ -330,4 +400,7 @@ app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-eventLoop();
+const result = await connectToDatabase();
+if (result == true) {
+    eventLoop();
+}
