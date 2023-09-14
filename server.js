@@ -71,8 +71,8 @@ async function eventLoop() {
     const currentTemperature = await readTemperature();
     const HEATER_GAIN = 1 / HEATING_RATE_SECS_PER_DEGREE; // Define the heater's gain (inverse of the seconds/degree to get deg/sec)
     const HEATING_INERTIA_DURATION = 200; // Define the duration for heating inertia (the time the system takes to react to the heater being turned off)
-    const SMALL_HEAT_BURST_DURATION = 120 // 2 mins
-    const LARGE_HEAT_BURST_DURATION = 180 // 3 mins
+    const SMALL_HEAT_BURST_DURATION = 60 // about 0.5C
+    const LARGE_HEAT_BURST_DURATION = 120 // about 1C
     const upperThreshold = targetTemperature + SETPOINT_TOLERANCE;
     const lowerThreshold = targetTemperature - SETPOINT_TOLERANCE;
     const maxTemperatureRiseIfHeaterTurnedOffNow = HEATER_GAIN * HEATING_INERTIA_DURATION;
