@@ -70,7 +70,7 @@ function estimateTimeToReachSetpoint(currentTemperature, targetTemperature) {
 async function eventLoop() {
     const currentTemperature = await readTemperature();
     const HEATER_GAIN = 1 / HEATING_RATE_SECS_PER_DEGREE; // Define the heater's gain (inverse of the seconds/degree to get deg/sec)
-    const HEATING_INERTIA_DURATION = 450; // Define the duration for heating inertia (the time the system takes to react to the heater being turned off)
+    const HEATING_INERTIA_DURATION = 200; // Define the duration for heating inertia (the time the system takes to react to the heater being turned off)
     const SMALL_HEAT_BURST_DURATION = 120 // 2 mins
     const LARGE_HEAT_BURST_DURATION = 180 // 3 mins
     const upperThreshold = targetTemperature + SETPOINT_TOLERANCE;
