@@ -4,7 +4,7 @@ const ds18b20 = require("ds18b20");
 const GPIO = require("onoff").Gpio;
 const bodyParser = require("body-parser");
 const fsPromises = require("fs").promises;
-const { Client } = require('pg');
+const { Client } = require("pg");
 require("dotenv").config();
 
 // Constants
@@ -20,8 +20,8 @@ const SENSOR_ID = process.env.DS18B20_SENSOR_ID;
 
 // db setup
 const client = new Client({
-    host: 'localhost',
-    database: 'pivide',
+    host: "localhost",
+    database: "pivide",
     user: process.env.dbuser,
     password: process.env.dbpassword,
     port: 5432
@@ -33,10 +33,8 @@ app.use(bodyParser.json());
 
 // Global state variables
 let targetTemperature;  // The desired temperature to maintain
-let controlInterval;    // Reference to the temperature control loop interval
-let loggingInterval;    // reference to the temperature logging interval
 let SETPOINT_TOLERANCE = SETPOINT_TOLERANCE_DEFAULT; // This will be the modifiable value
-let CONTROL_STATE = "Off" // state of control loop
+let CONTROL_STATE = "Off"; // state of control loop
 let HEATING_RATE_SECS_PER_DEGREE = HEATING_RATE_SECS_PER_DEGREE_DEFAULT; // This will be the modifiable value
 let COOLING_RATE_SECS_PER_DEGREE = COOLING_RATE_SECS_PER_DEGREE_DEFAULT;
 let timeLeftInWaitingPhase = 0;
@@ -46,10 +44,10 @@ let timeLeftInWaitingPhase = 0;
 async function connectToDatabase() {
     try {
         await client.connect(); // This is an asynchronous operation
-        console.log('Connected to the database');
+        console.log("Connected to the database");
         return true;
     } catch (err) {
-        console.error('Error connecting to the database:', err);
+        console.error("Error connecting to the database:", err);
         return false;
     }
 }
@@ -60,40 +58,40 @@ async function sendToDB(type, data) {
     try {
         query = generateInsertQuery(type, data);
     } catch (error) {
-        console.log(error)
-        throw error
+        console.log(error);
+        throw error;
     }
 
     try {
         values = generateInsertValues(type, data);
     } catch (error) {
-        console.log(error)
-        throw error
+        console.log(error);
+        throw error;
     }
 
     try {
         client.query(query, values);
     } catch (error) {
-        console.log(error)
-        throw error
+        console.log(error);
+        throw error;
     }
 }
 
 function generateInsertQuery(type) {
     switch (type) {
-        case "temperature":
-            return "INSERT INTO temperatures(temperature) VALUES($1)";
-        default:
-            throw "No matching insert type"
+    case "temperature":
+        return "INSERT INTO temperatures(temperature) VALUES($1)";
+    default:
+        throw "No matching insert type";
     }
 }
 
 function generateInsertValues(type, data) {
     switch (type) {
-        case "temperature":
-            return [data]
-        default:
-            throw "No matching insert type"
+    case "temperature":
+        return [data];
+    default:
+        throw "No matching insert type";
     }
 }
 
@@ -125,8 +123,8 @@ async function eventLoop() {
     const currentTemperature = await readTemperature();
     const HEATER_GAIN = 1 / HEATING_RATE_SECS_PER_DEGREE; // Define the heater's gain (inverse of the seconds/degree to get deg/sec)
     const HEATING_INERTIA_DURATION = 200; // Define the duration for heating inertia (the time the system takes to react to the heater being turned off)
-    const SMALL_HEAT_BURST_DURATION = 60 // about 0.5C
-    const LARGE_HEAT_BURST_DURATION = 120 // about 1C
+    const SMALL_HEAT_BURST_DURATION = 60; // about 0.5C
+    const LARGE_HEAT_BURST_DURATION = 120; // about 1C
     const upperThreshold = targetTemperature + SETPOINT_TOLERANCE;
     const lowerThreshold = targetTemperature - SETPOINT_TOLERANCE;
     const maxTemperatureRiseIfHeaterTurnedOffNow = HEATER_GAIN * HEATING_INERTIA_DURATION;
@@ -155,9 +153,9 @@ async function eventLoop() {
         try {
             await logMessage(`${CONTROL_STATE}|Time left in waiting phase: ${timeLeftInWaitingPhase}|Heater state: ${heaterState}`);
         } catch (error) {
-            console.error(`Error writing to log ${error}`)
+            console.error(`Error writing to log ${error}`);
         }
-        timeLeftInWaitingPhase -= EVENT_LOOP_INTERVAL
+        timeLeftInWaitingPhase -= EVENT_LOOP_INTERVAL;
     }
 
     // no setpoint set
@@ -165,18 +163,18 @@ async function eventLoop() {
         try {
             await logMessage(`${CONTROL_STATE}`);
         } catch (error) {
-            console.error(`Error writing to log ${error}`)
+            console.error(`Error writing to log ${error}`);
         }
     }
 
     // if a setpoint has been set, transition into an "on" state
     else if (CONTROL_STATE == "Off" && targetTemperature) {
-        const PREVIOUS_STATE = CONTROL_STATE
-        CONTROL_STATE = "Initial Heating"
+        const PREVIOUS_STATE = CONTROL_STATE;
+        CONTROL_STATE = "Initial Heating";
         try {
             await logMessage(`${PREVIOUS_STATE} --> ${CONTROL_STATE}|Target Temperature: ${targetTemperature}`);
         } catch (error) {
-            console.error(`Error writing to log ${error}`)
+            console.error(`Error writing to log ${error}`);
         }
 
     }
@@ -187,31 +185,31 @@ async function eventLoop() {
         try {
             await logMessage(`${CONTROL_STATE}|Tmax: ${temperatureIfHeaterTurnedOffNow}|Heater ON`);
         } catch (error) {
-            console.error(`Error writing to log ${error}`)
+            console.error(`Error writing to log ${error}`);
         }
     }
 
     // we're in the initial heating phase, but we're on track to overshoot the upper limit, turn the heater off and set an inertia timer
     else if (CONTROL_STATE == "Initial Heating" && temperatureIfHeaterTurnedOffNow > upperThreshold) {
-        const PREVIOUS_STATE = CONTROL_STATE
+        const PREVIOUS_STATE = CONTROL_STATE;
         HEATER_RELAY.writeSync(1);  // turn off heater
-        CONTROL_STATE = "Inertia Phase"
-        timeLeftInWaitingPhase = HEATING_INERTIA_DURATION
+        CONTROL_STATE = "Inertia Phase";
+        timeLeftInWaitingPhase = HEATING_INERTIA_DURATION;
         try {
             await logMessage(`${PREVIOUS_STATE} --> ${CONTROL_STATE}|Tmax: ${temperatureIfHeaterTurnedOffNow}|Heater OFF|Heating inertia time set: ${timeLeftInWaitingPhase}`);
         } catch (error) {
-            console.error(`Error writing to log ${error}`)
+            console.error(`Error writing to log ${error}`);
         }
     }
 
     // when the inertia timer has finished, enter the control phase
     else if (CONTROL_STATE == "Inertia Phase" && timeLeftInWaitingPhase <= 0) {
-        const PREVIOUS_STATE = CONTROL_STATE
-        CONTROL_STATE = "Control Phase"
+        const PREVIOUS_STATE = CONTROL_STATE;
+        CONTROL_STATE = "Control Phase";
         try {
             await logMessage(`${PREVIOUS_STATE} --> ${CONTROL_STATE}`);
         } catch (error) {
-            console.error(`Error writing to log ${error}`)
+            console.error(`Error writing to log ${error}`);
         }
     }
 
@@ -220,53 +218,53 @@ async function eventLoop() {
         try {
             await logMessage(`${CONTROL_STATE}|${currentTemperature} is above ${targetTemperature}|Doing nothing`);
         } catch (error) {
-            console.error(`Error writing to log ${error}`)
+            console.error(`Error writing to log ${error}`);
         }
     }
 
     // if we're in the control phase and the temp is between the target and lower threshold, do a small heat burst
     else if (CONTROL_STATE == "Control Phase" && currentTemperature >= lowerThreshold && currentTemperature <= targetTemperature) {
-        const PREVIOUS_STATE = CONTROL_STATE
-        CONTROL_STATE = "Small Heat Burst"
+        const PREVIOUS_STATE = CONTROL_STATE;
+        CONTROL_STATE = "Small Heat Burst";
         HEATER_RELAY.writeSync(0);  // turn on heater
-        timeLeftInWaitingPhase = SMALL_HEAT_BURST_DURATION
+        timeLeftInWaitingPhase = SMALL_HEAT_BURST_DURATION;
         try {
             await logMessage(`${PREVIOUS_STATE} --> ${CONTROL_STATE}|${currentTemperature} is between ${targetTemperature} and ${lowerThreshold}|Heater ON`);
         } catch (error) {
-            console.error(`Error writing to log ${error}`)
+            console.error(`Error writing to log ${error}`);
         }
     }
 
     else if (CONTROL_STATE == "Control Phase" && currentTemperature < lowerThreshold) {
-        const PREVIOUS_STATE = CONTROL_STATE
-        CONTROL_STATE = "Large Heat Burst"
+        const PREVIOUS_STATE = CONTROL_STATE;
+        CONTROL_STATE = "Large Heat Burst";
         HEATER_RELAY.writeSync(0);  // turn on heater
-        timeLeftInWaitingPhase = LARGE_HEAT_BURST_DURATION
+        timeLeftInWaitingPhase = LARGE_HEAT_BURST_DURATION;
         try {
             await logMessage(`${PREVIOUS_STATE} --> ${CONTROL_STATE}|${currentTemperature} is below ${lowerThreshold}|Heater ON`);
         } catch (error) {
-            console.error(`Error writing to log ${error}`)
+            console.error(`Error writing to log ${error}`);
         }
     }
 
     // we've finished the heat burst, go into a heating inertia phase
     else if (CONTROL_STATE == "Small Heat Burst" || CONTROL_STATE == "Large Heat Burst") {
-        const PREVIOUS_STATE = CONTROL_STATE
-        CONTROL_STATE = "Inertia Phase"
+        const PREVIOUS_STATE = CONTROL_STATE;
+        CONTROL_STATE = "Inertia Phase";
         HEATER_RELAY.writeSync(1);  // turn off heater
-        timeLeftInWaitingPhase = HEATING_INERTIA_DURATION
+        timeLeftInWaitingPhase = HEATING_INERTIA_DURATION;
         try {
             await logMessage(`${PREVIOUS_STATE} --> ${CONTROL_STATE}|Heater OFF|Heating inertia time set: ${timeLeftInWaitingPhase}`);
         } catch (error) {
-            console.error(`Error writing to log ${error}`)
+            console.error(`Error writing to log ${error}`);
         }
     }
 
     else {
         try {
-            await logMessage(`Reached a state with no actions|State: ${CONTROL_STATE}|Current Temp: ${currentTemperature}|Target temp: ${targetTemperature}|Tmax: ${temperatureIfHeaterTurnedOffNow}|Time in waiting phase: ${timeLeftInWaitingPhase}`)
+            await logMessage(`Reached a state with no actions|State: ${CONTROL_STATE}|Current Temp: ${currentTemperature}|Target temp: ${targetTemperature}|Tmax: ${temperatureIfHeaterTurnedOffNow}|Time in waiting phase: ${timeLeftInWaitingPhase}`);
         } catch (error) {
-            console.error(`Error writing to log ${error}`)
+            console.error(`Error writing to log ${error}`);
         }
     }
     setTimeout(eventLoop, EVENT_LOOP_INTERVAL * 1000); // milliseconds
@@ -311,7 +309,7 @@ app.post("/heater", async (req, res) => {
 
 app.post("/setpoint", async (req, res) => {
     targetTemperature = req.body.temperature;
-    CONTROL_STATE = "Off"
+    CONTROL_STATE = "Off";
     res.json({ message: "Temperature set" });
 });
 
@@ -400,7 +398,5 @@ app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-const result = await connectToDatabase();
-if (result == true) {
-    eventLoop();
-}
+connectToDatabase();
+eventLoop();
