@@ -57,16 +57,6 @@ async function logMessage(message) {
     }
 }
 
-function calculateDifference(currentTemperature, targetTemperature) {
-    return parseFloat((currentTemperature - targetTemperature).toFixed(1));
-}
-
-function estimateTimeToReachSetpoint(currentTemperature, targetTemperature) {
-    const difference = calculateDifference(currentTemperature, targetTemperature);
-    const rate = difference < 0 ? HEATING_RATE_SECS_PER_DEGREE : COOLING_RATE_SECS_PER_DEGREE;
-    return Math.abs(difference) * rate;
-}
-
 async function eventLoop() {
     const currentTemperature = await readTemperature();
     const HEATER_GAIN = 1 / HEATING_RATE_SECS_PER_DEGREE; // Define the heater's gain (inverse of the seconds/degree to get deg/sec)
@@ -290,31 +280,39 @@ app.post("/tolerance", (req, res) => {
 });
 
 app.post("/heatingRate", (req, res) => {
-    HEATING_RATE_SECS_PER_DEGREE = req.body.heatingRate;
-    logMessage(`Heating rate updated to: ${HEATING_RATE_SECS_PER_DEGREE} secs/°C`);
-    res.json({ success: true, message: `Heating rate updated successfully to ${HEATING_RATE_SECS_PER_DEGREE} secs/°C` });
+    const { heatingRate } = req.body;
+
+    if (typeof heatingRate === "number" && heatingRate > 0) {
+        HEATING_RATE_SECS_PER_DEGREE = heatingRate;
+        logMessage(`Heating rate updated successfully to ${heatingRate} secs/°C`);
+        res.json({ success: true, message: `Heating rate updated successfully to ${heatingRate} secs/°C` });
+    } else {
+        res.status(400).json({ success: false, message: `Invalid heating rate value ${heatingRate}` });
+    }
 });
 
 app.post("/coolingRate", (req, res) => {
-    COOLING_RATE_SECS_PER_DEGREE = req.body.heatingRate;
-    logMessage(`Cooling rate updated to: ${COOLING_RATE_SECS_PER_DEGREE} secs/°C`);
-    res.json({ success: true, message: `Cooling rate updated successfully to ${COOLING_RATE_SECS_PER_DEGREE} secs/°C` });
+    const { coolingRate } = req.body;
+
+    if (typeof coolingRate === "number" && coolingRate > 0) {
+        COOLING_RATE_SECS_PER_DEGREE = coolingRate;
+        logMessage(`Cooling rate updated successfully to ${coolingRate} secs/°C`);
+        res.json({ success: true, message: `Cooling rate updated successfully to ${coolingRate} secs/°C` });
+    } else {
+        res.status(400).json({ success: false, message: `Invalid cooling rate value ${coolingRate}` });
+    }
 });
+
 
 // Cleanup code to release GPIO pins upon program exit
 function cleanupAndExit() {
-    if (controlInterval) {
-        clearInterval(controlInterval);
-    }
-    if (loggingInterval) {
-        clearInterval(loggingInterval);
-    }
+
     HEATER_RELAY.writeSync(1);
     HEATER_RELAY.unexport();
 
-    logMessage("Released the GPIO pin and cleared the timers. Exiting now...")
+    logMessage("Released the GPIO pin. Exiting now...")
         .then(() => {
-            console.log("Released the GPIO pin and cleared the timers. Exiting now...");
+            console.log("Released the GPIO pin. Exiting now...");
             process.exit(0);
         })
         .catch(err => {

@@ -47,34 +47,6 @@ function clearSetpoint() {
         });
 }
 
-function controlSetpoint() {
-    const temperatureValue = document.getElementById("targetTemperatureInput").value;
-    fetch("/control", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ temperature: parseFloat(temperatureValue) })
-    })
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById("controlState").textContent = data.message;
-            document.getElementById("targetTemperatureDisplay").textContent = parseFloat(temperatureValue).toFixed(1);
-        });
-}
-
-function stopControlLoop() {
-    fetch("/control", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ command: "stop" })
-    })
-        .then(response => response.json())
-        .then(updateAllStatuses());
-}
-
 function updateAllStatuses() {
     fetch("/status")
         .then(response => response.json())
@@ -105,7 +77,7 @@ function logToServer(message) {
         });
 }
 
-function updateTolerance() {
+function setTolerance() {
     const newTolerance = parseFloat(document.getElementById("toleranceInput").value);
     fetch("/tolerance", {
         method: "POST",
@@ -166,9 +138,7 @@ function setCoolingRate() {
 document.getElementById("refreshValues").addEventListener("click", updateAllStatuses);
 document.getElementById("heaterOn").addEventListener("click", function () { controlHeat("on"); });
 document.getElementById("heaterOff").addEventListener("click", function () { controlHeat("off"); });
-document.getElementById("setTargetTemperature").addEventListener("click", controlSetpoint);
-document.getElementById("stopControlLoop").addEventListener("click", stopControlLoop);
-document.getElementById("setTolerance").addEventListener("click", updateTolerance);
+document.getElementById("setTolerance").addEventListener("click", setTolerance);
 document.getElementById("setHeatingRate").addEventListener("click", setHeatingRate);
 document.getElementById("setCoolingRate").addEventListener("click", setCoolingRate);
 document.getElementById("setSetpoint").addEventListener("click", setSetpoint);
