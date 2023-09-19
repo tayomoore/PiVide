@@ -140,6 +140,10 @@ function setCoolingRate() {
 }
 
 const updateChartData = async () => {
+    if (!TemperatureChart) {
+        console.error("Chart not initialized.");
+        return;
+    }
     const canvasWidth = document.getElementById("temperatureChart").width;
     const res = await fetch(`/temperatureHistory?timeRange=${selectedTimeRange}&points=${canvasWidth}`);
     const data = await res.json();
@@ -198,12 +202,10 @@ const TemperatureChart = {
 
     updateData: function(data) {
         // Update chart data
-        this.myChart.datasets[0].data = data;
+        this.myChart.data = data;
         this.myChart.update();
     }
 };
-
-
 
 
 // Event listeners
