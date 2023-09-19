@@ -28,9 +28,9 @@ function setSetpoint() {
         body: JSON.stringify({ temperature: parseFloat(temperatureValue) })
     })
         .then(response => response.json())
-        .then(data => {
-            document.getElementById("targetTemperatureDisplay").textContent = parseFloat(temperatureValue).toFixed(1);
-        });
+        .then(
+            document.getElementById("targetTemperatureDisplay").textContent = parseFloat(temperatureValue).toFixed(1)
+        );
 }
 
 function clearSetpoint() {
@@ -42,9 +42,9 @@ function clearSetpoint() {
         body: JSON.stringify({ temperature: null })
     })
         .then(response => response.json())
-        .then(data => {
-            document.getElementById("targetTemperatureDisplay").textContent = "N/A";
-        });
+        .then(
+            document.getElementById("targetTemperatureDisplay").textContent = "N/A"
+        );
 }
 
 function updateAllStatuses() {
