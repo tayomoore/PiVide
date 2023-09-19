@@ -73,19 +73,19 @@ async function sendToDB(type, data) {
 
 function generateInsertQuery(type) {
     switch (type) {
-    case "temperature":
-        return "INSERT INTO temperatures(temperature) VALUES($1)";
-    default:
-        throw "No matching insert type";
+        case "temperature":
+            return "INSERT INTO temperatures(temperature) VALUES($1)";
+        default:
+            throw "No matching insert type";
     }
 }
 
 function generateInsertValues(type, data) {
     switch (type) {
-    case "temperature":
-        return [data];
-    default:
-        throw "No matching insert type";
+        case "temperature":
+            return [data];
+        default:
+            throw "No matching insert type";
     }
 }
 
@@ -372,13 +372,23 @@ app.get("/temperatureHistory", async (req, res) => {
     const intervalSeconds = (timeRangeMinutes * 60) / points;
 
     let query = `
-        SELECT 
-            date_trunc('second', (timestamp - timestamp % interval '${intervalSeconds} seconds')) as time, 
-            AVG(temperature)
-        FROM temperatures
-        WHERE timestamp >= NOW() - INTERVAL '${timeRangeMinutes} minutes'
-        GROUP BY time
-        ORDER BY time DESC
+    SELECT 
+    date_trunc('second', 
+               (timestamp - 
+                (interval '1 second' * 
+                 (EXTRACT(epoch FROM timestamp)::integer % ${intervalSeconds})
+                )
+               )
+              ) as time, 
+    AVG(temperature)
+    FROM 
+        temperatures
+    WHERE 
+        timestamp >= NOW() - (INTERVAL '1 minute' * ${timeRangeMinutes})
+    GROUP BY 
+        time
+    ORDER BY 
+        time DESC;
     `;
 
     try {
