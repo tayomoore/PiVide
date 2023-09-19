@@ -1,3 +1,4 @@
+/* global Chart */
 const UPDATE_INTERVAL = 3000; // milliseconds
 let selectedTimeRange = 60; // Default time range in minutes for the x-axis of the temperature graph
 
@@ -150,9 +151,10 @@ const updateChartData = async () => {
         };
     });
 
-    TemperatureChart.updateData(chartData)
+    TemperatureChart.updateData(chartData);
 };
 
+// eslint-disable-next-line no-unused-vars
 const updateTimeRange = (timeRange) => {
     selectedTimeRange = timeRange;
     updateChartData();
@@ -180,13 +182,13 @@ const TemperatureChart = {
                         type: "time",  // Specify time type for x-axis
                         title: {
                             display: true,
-                            text: 'Time'
+                            text: "Time"
                         }
                     },
                     y: {
                         title: {
                             display: true,
-                            text: 'Temperature (°C)'
+                            text: "Temperature (°C)"
                         }
                     }
                 }
