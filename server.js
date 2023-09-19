@@ -73,19 +73,19 @@ async function sendToDB(type, data) {
 
 function generateInsertQuery(type) {
     switch (type) {
-        case "temperature":
-            return "INSERT INTO temperatures(temperature) VALUES($1)";
-        default:
-            throw "No matching insert type";
+    case "temperature":
+        return "INSERT INTO temperatures(temperature) VALUES($1)";
+    default:
+        throw "No matching insert type";
     }
 }
 
 function generateInsertValues(type, data) {
     switch (type) {
-        case "temperature":
-            return [data];
-        default:
-            throw "No matching insert type";
+    case "temperature":
+        return [data];
+    default:
+        throw "No matching insert type";
     }
 }
 
