@@ -13,19 +13,13 @@ const PORT = 3000;
 const SETPOINT_TOLERANCE_DEFAULT = 0.5; // degrees C either side of set point
 const HEATING_RATE_SECS_PER_DEGREE_DEFAULT = 100; // Default value in seconds per degree
 const COOLING_RATE_SECS_PER_DEGREE_DEFAULT = 800;  // seconds required to decrease 1°C
-const EVENT_LOOP_INTERVAL = 10; // seconds 
+const EVENT_LOOP_INTERVAL = 10000; // milliseconds
 const HEATER_RELAY = new GPIO(2, "out");
 HEATER_RELAY.writeSync(1);  // turn off heater immediately (GPIO pin is *on* by default)
 const SENSOR_ID = process.env.DS18B20_SENSOR_ID;
 
 // db setup
-const client = new Client({
-    host: "localhost",
-    database: "pivide",
-    user: process.env.dbuser,
-    password: process.env.dbpassword,
-    port: 5432
-});
+const client = new Client({ host: "localhost", database: "pivide", user: process.env.dbuser, password: process.env.dbpassword, port: 5432 });
 
 // Middleware setup
 app.use(express.static("public"));
@@ -79,19 +73,19 @@ async function sendToDB(type, data) {
 
 function generateInsertQuery(type) {
     switch (type) {
-    case "temperature":
-        return "INSERT INTO temperatures(temperature) VALUES($1)";
-    default:
-        throw "No matching insert type";
+        case "temperature":
+            return "INSERT INTO temperatures(temperature) VALUES($1)";
+        default:
+            throw "No matching insert type";
     }
 }
 
 function generateInsertValues(type, data) {
     switch (type) {
-    case "temperature":
-        return [data];
-    default:
-        throw "No matching insert type";
+        case "temperature":
+            return [data];
+        default:
+            throw "No matching insert type";
     }
 }
 
@@ -131,6 +125,7 @@ async function eventLoop() {
     const temperatureIfHeaterTurnedOffNow = currentTemperature + maxTemperatureRiseIfHeaterTurnedOffNow;
 
     // log current temperature
+    // delete this txt log once we're up and running with the db
     try {
         await logMessage(`Current temperature: ${currentTemperature}`);
     } catch (error) {
@@ -267,7 +262,7 @@ async function eventLoop() {
             console.error(`Error writing to log ${error}`);
         }
     }
-    setTimeout(eventLoop, EVENT_LOOP_INTERVAL * 1000); // milliseconds
+    setTimeout(eventLoop, EVENT_LOOP_INTERVAL);
 }
 
 
@@ -370,6 +365,30 @@ app.post("/coolingRate", (req, res) => {
         res.status(400).json({ success: false, message: `Invalid cooling rate value ${coolingRate}` });
     }
 });
+
+app.get("/temperatureHistory", async (req, res) => {
+    const timeRangeMinutes = req.query.timeRange || 60;  // Default to 5 minutes
+    const points = req.query.points || 400;  // Default to 400 points
+    const intervalSeconds = (timeRangeMinutes * 60) / points;
+
+    let query = `
+        SELECT 
+            date_trunc('second', (timestamp - timestamp % interval '${intervalSeconds} seconds')) as time, 
+            AVG(temperature)
+        FROM temperatures
+        WHERE timestamp >= NOW() - INTERVAL '${timeRangeMinutes} minutes'
+        GROUP BY time
+        ORDER BY time DESC
+    `;
+
+    try {
+        const result = await client.query(query);
+        res.json({ temperatures: result.rows });
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching temperature history: " + error.message });
+    }
+});
+
 
 
 // Cleanup code to release GPIO pins upon program exit

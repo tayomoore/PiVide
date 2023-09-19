@@ -1,4 +1,6 @@
 const UPDATE_INTERVAL = 3000; // milliseconds
+let selectedTimeRange = 60; // Default time range in minutes for the x-axis of the temperature graph
+
 
 // Functions
 function controlHeat(command) {
@@ -48,6 +50,7 @@ function clearSetpoint() {
 }
 
 function updateAllStatuses() {
+    updateChartData();
     fetch("/status")
         .then(response => response.json())
         .then(data => {
@@ -62,6 +65,7 @@ function updateAllStatuses() {
         .catch(error => {
             logToServer(`Error fetching statuses: ${error}`);
         });
+    setTimeout(updateAllStatuses, UPDATE_INTERVAL);
 }
 
 function logToServer(message) {
@@ -134,6 +138,72 @@ function setCoolingRate() {
         });
 }
 
+const updateChartData = async () => {
+    const canvasWidth = document.getElementById("temperatureChart").width;
+    const res = await fetch(`/temperatureHistory?timeRange=${selectedTimeRange}&points=${canvasWidth}`);
+    const data = await res.json();
+
+    const chartData = data.temperatures.map(t => {
+        return {
+            x: new Date(t.time).toISOString(),  // Convert timestamp to ISO string
+            y: t.temperature
+        };
+    });
+
+    TemperatureChart.updateData(chartData)
+};
+
+const updateTimeRange = (timeRange) => {
+    selectedTimeRange = timeRange;
+    updateChartData();
+};
+
+const TemperatureChart = {
+    myChart: null,
+
+    init: function() {
+        const ctx = document.getElementById("temperatureChart").getContext("2d");
+        this.myChart = new Chart(ctx, {
+            type: "scatter",  // Change type to scatter
+            data: {
+                datasets: [{
+                    label: "Temperature",
+                    data: [],  // Initialize empty
+                    borderColor: "rgba(75, 192, 192, 1)",
+                    fill: false,
+                    showLine: true  // Add line through points
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        type: "time",  // Specify time type for x-axis
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Temperature (°C)'
+                        }
+                    }
+                }
+            }
+        });
+    },
+
+    updateData: function(data) {
+        // Update chart data
+        this.myChart.datasets[0].data = data;
+        this.myChart.update();
+    }
+};
+
+
+
+
 // Event listeners
 document.getElementById("refreshValues").addEventListener("click", updateAllStatuses);
 document.getElementById("heaterOn").addEventListener("click", function () { controlHeat("on"); });
@@ -145,6 +215,8 @@ document.getElementById("setSetpoint").addEventListener("click", setSetpoint);
 document.getElementById("clearSetpoint").addEventListener("click", clearSetpoint);
 document.addEventListener("DOMContentLoaded", updateAllStatuses);
 
+// set up the chart the first time
+TemperatureChart.init();
 
 // Set auto updates
-setInterval(updateAllStatuses, UPDATE_INTERVAL);
+updateAllStatuses();
