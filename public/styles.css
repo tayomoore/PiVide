@@ -6,10 +6,16 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100%; 
+    height: 100%;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 #temperatureChart {
-    width: 800px !important;
+    width: 100% !important;
     height: 400px !important;
-  }
+}
+
+.selected-button {
+    text-decoration: underline;
+}

@@ -69,7 +69,7 @@ function updateAllStatuses() {
     setTimeout(updateAllStatuses, STATUS_UPDATE_INTERVAL);
 }
 
-function updateChart(){
+function updateChart() {
     updateChartData();
     setTimeout(updateChart, CHART_UPDATE_INTERVAL);
 }
@@ -164,15 +164,33 @@ const updateChartData = async () => {
 };
 
 // eslint-disable-next-line no-unused-vars
-const updateTimeRange = (timeRange) => {
-    selectedTimeRange = timeRange;
+function updateTimeRange(minutes) {
+    // Update the global variable
+    selectedTimeRange = minutes;
+
+    // Underline the button text of the selected time window
+    updateButtonStyles();
+
+    // fetch the data for the newly selected time range immediately, rather than waiting for the timed refresh
     updateChartData();
-};
+}
+
+function updateButtonStyles() {
+    const buttons = document.querySelectorAll(".time-button");
+    buttons.forEach((button) => {
+        const buttonValue = (button.textContent.split(" ")[0] * 60)
+        if (buttonValue === selectedTimeRange) {
+            button.classList.add("selected-button");
+        } else {
+            button.classList.remove("selected-button");
+        }
+    });
+}
 
 const TemperatureChart = {
     myChart: null,
 
-    init: function() {
+    init: function () {
         const ctx = document.getElementById("temperatureChart").getContext("2d");
         this.myChart = new Chart(ctx, {
             type: "scatter",
@@ -190,6 +208,8 @@ const TemperatureChart = {
             },
             options: {
                 animation: false,  // Disable animations
+                responsive: true,  // scale the chart to page width,
+                maintainAspectRatio: true,
                 scales: {
                     x: {
                         type: "time",
@@ -225,7 +245,7 @@ const TemperatureChart = {
         });
     },
 
-    updateData: function(newData) {
+    updateData: function (newData) {
         // Update chart data
         this.myChart.data.datasets[0].data = newData;
         this.myChart.update();
@@ -244,8 +264,9 @@ document.getElementById("setSetpoint").addEventListener("click", setSetpoint);
 document.getElementById("clearSetpoint").addEventListener("click", clearSetpoint);
 document.addEventListener("DOMContentLoaded", updateAllStatuses);
 
-// set up the chart the first time
+// set up the chart & buttons for the first time
 TemperatureChart.init();
+updateButtonStyles();
 
 // Set auto updates
 updateAllStatuses();
