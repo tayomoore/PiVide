@@ -210,6 +210,11 @@ const TemperatureChart = {
                 animation: false,  // Disable animations
                 responsive: true,  // scale the chart to page width,
                 maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false  // Add this line to hide the legend
+                    }
+                },
                 scales: {
                     x: {
                         type: "time",
