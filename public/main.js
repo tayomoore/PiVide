@@ -71,7 +71,7 @@ function updateAllStatuses() {
 
 function updateChart(){
     updateChartData();
-    setTimeout(updateAllStatuses, CHART_UPDATE_INTERVAL);
+    setTimeout(updateChart, CHART_UPDATE_INTERVAL);
 }
 
 function logToServer(message) {
