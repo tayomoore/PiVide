@@ -178,7 +178,7 @@ function updateTimeRange(minutes) {
 function updateButtonStyles() {
     const buttons = document.querySelectorAll(".time-button");
     buttons.forEach((button) => {
-        const buttonValue = (button.textContent.split(" ")[0] * 60)
+        const buttonValue = (button.textContent.split(" ")[0] * 60);
         if (buttonValue === selectedTimeRange) {
             button.classList.add("selected-button");
         } else {
