@@ -1,5 +1,6 @@
 /* global Chart */
-const UPDATE_INTERVAL = 3000; // milliseconds
+const STATUS_UPDATE_INTERVAL = 3000; // milliseconds
+const CHART_UPDATE_INTERVAL = 5000; //milliseconds
 let selectedTimeRange = 60; // Default time range in minutes for the x-axis of the temperature graph
 
 
@@ -51,7 +52,6 @@ function clearSetpoint() {
 }
 
 function updateAllStatuses() {
-    updateChartData();
     fetch("/status")
         .then(response => response.json())
         .then(data => {
@@ -66,7 +66,12 @@ function updateAllStatuses() {
         .catch(error => {
             logToServer(`Error fetching statuses: ${error}`);
         });
-    setTimeout(updateAllStatuses, UPDATE_INTERVAL);
+    setTimeout(updateAllStatuses, STATUS_UPDATE_INTERVAL);
+}
+
+function updateChart(){
+    updateChartData();
+    setTimeout(updateAllStatuses, CHART_UPDATE_INTERVAL);
 }
 
 function logToServer(message) {
@@ -170,29 +175,49 @@ const TemperatureChart = {
     init: function() {
         const ctx = document.getElementById("temperatureChart").getContext("2d");
         this.myChart = new Chart(ctx, {
-            type: "scatter",  // Change type to scatter
+            type: "scatter",
             data: {
                 datasets: [{
                     label: "Temperature",
-                    data: [],  // Initialize empty
+                    data: [],
                     borderColor: "rgba(75, 192, 192, 1)",
                     fill: false,
-                    showLine: true  // Add line through points
+                    showLine: true,
+                    spanGaps: true,
+                    pointRadius: 2,  // Set the point radius to make it appear as a dot
+                    pointStyle: "circle"  // Optional, you can also use "rect" for square dots
                 }]
             },
             options: {
+                animation: false,  // Disable animations
                 scales: {
                     x: {
-                        type: "time",  // Specify time type for x-axis
+                        type: "time",
+                        time: {
+                            displayFormats: {
+                                minute: "HH:mm",
+                                hour: "HH:mm"
+                            }
+                        },
                         title: {
                             display: true,
                             text: "Time"
+                        },
+                        ticks: {
+                            font: {
+                                size: 14,
+                            },
                         }
                     },
                     y: {
                         title: {
                             display: true,
                             text: "Temperature (°C)"
+                        },
+                        ticks: {
+                            font: {
+                                size: 14,
+                            },
                         }
                     }
                 }
@@ -200,9 +225,9 @@ const TemperatureChart = {
         });
     },
 
-    updateData: function(data) {
+    updateData: function(newData) {
         // Update chart data
-        this.myChart.data = data;
+        this.myChart.data.datasets[0].data = newData;
         this.myChart.update();
     }
 };
@@ -224,3 +249,4 @@ TemperatureChart.init();
 
 // Set auto updates
 updateAllStatuses();
+updateChart();

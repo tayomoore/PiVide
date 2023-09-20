@@ -14,11 +14,13 @@
 
 <body>
     <h1>PiVide Control</h1>
-    <canvas id="temperatureChart" width="400" height="200"></canvas>
+    <div id="canvas-container">
+        <canvas id="temperatureChart" width="800" height="400"></canvas>
+      </div>
     <br>
-    <button onclick="updateTimeRange(5)">5 mins</button>
     <button onclick="updateTimeRange(15)">15 mins</button>
     <button onclick="updateTimeRange(60)">60 mins</button>
+    <button onclick="updateTimeRange(180)">3 hours</button>
     <button onclick="updateTimeRange(1440)">24 hours</button>
     <br>
     <p>Current Temperature: <span id="temperature" aria-label="Current Temperature">Loading...</span>°C</p>

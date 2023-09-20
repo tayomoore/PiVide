@@ -124,14 +124,6 @@ async function eventLoop() {
     const maxTemperatureRiseIfHeaterTurnedOffNow = HEATER_GAIN * HEATING_INERTIA_DURATION;
     const temperatureIfHeaterTurnedOffNow = currentTemperature + maxTemperatureRiseIfHeaterTurnedOffNow;
 
-    // log current temperature
-    // delete this txt log once we're up and running with the db
-    try {
-        await logMessage(`Current temperature: ${currentTemperature}`);
-    } catch (error) {
-        console.error(`Error logging temperature: ${error}`);
-    }
-
     try {
         await sendToDB("temperature", currentTemperature);
     } catch (error) {
@@ -367,28 +359,34 @@ app.post("/coolingRate", (req, res) => {
 });
 
 app.get("/temperatureHistory", async (req, res) => {
-    const timeRangeMinutes = req.query.timeRange || 60;  // Default to 5 minutes
-    const points = req.query.points || 400;  // Default to 400 points
-    const intervalSeconds = (timeRangeMinutes * 60) / points;
-
+    const timeRangeMinutes = req.query.timeRange || 60;  // Default to 60 minutes
+    const pointsToReturn = req.query.points || 800;  // Default to 800 points
+    
     let query = `
-    SELECT 
-    date_trunc('second', 
-               (timestamp - 
-                (interval '1 second' * 
-                 (EXTRACT(epoch FROM timestamp)::integer % ${intervalSeconds})
-                )
-               )
-              ) as time, 
-    AVG(temperature)
-    FROM 
-        temperatures
-    WHERE 
-        timestamp >= NOW() - (INTERVAL '1 minute' * ${timeRangeMinutes})
-    GROUP BY 
-        time
-    ORDER BY 
-        time DESC;
+    WITH time_intervals AS (
+        SELECT generate_series(
+            NOW() - interval '1 second' * (${timeRangeMinutes} * 60),
+            NOW(),
+            interval '1 second' * (${timeRangeMinutes} * 60) / ${pointsToReturn}
+        ) AS timestamp
+    ),
+    temp_data AS (
+        SELECT timestamp, temperature
+        FROM temperatures
+        WHERE timestamp BETWEEN (NOW() - interval '1 second' * (${timeRangeMinutes} * 60)) AND NOW()
+    ),
+    joined_data AS (
+        SELECT
+            ti.timestamp as "time",
+            AVG(td.temperature) AS "temperature"
+        FROM time_intervals ti
+        LEFT JOIN temp_data td ON td.timestamp BETWEEN 
+            ti.timestamp - interval '1 second' * (${timeRangeMinutes} * 60) / (${pointsToReturn} * 2) AND 
+            ti.timestamp + interval '1 second' * (${timeRangeMinutes} * 60) / (${pointsToReturn} * 2)
+        GROUP BY ti.timestamp
+    )
+    SELECT * FROM joined_data
+    ORDER BY "time" DESC;
     `;
 
     try {
