@@ -208,6 +208,8 @@ const TemperatureChart = {
             },
             options: {
                 animation: false,  // Disable animations
+                responsive: true,  // scale the chart to page width,
+                maintainAspectRatio: true,
                 scales: {
                     x: {
                         type: "time",
