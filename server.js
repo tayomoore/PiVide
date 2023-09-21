@@ -110,24 +110,24 @@ function generateInsertValues(type, data) {
     switch (type) {
     case "temperature":
         return [data];
-        case "event_log":
-            return [
-                context.current_state,
-                context.previous_state,
-                context.heater_state,
-                context.currentTemperature,
-                context.targetTemperature,
-                context.upperThreshold,
-                context.lowerThreshold,
-                context.maxTemperatureRiseIfHeaterTurnedOffNow,
-                context.temperatureIfHeaterTurnedOffNow,
-                context.timeLeftInWaitingPhase,
-                context.action,
-                context.HEATER_GAIN,
-                context.HEATING_INERTIA_DURATION,
-                context.SMALL_HEAT_BURST_DURATION,
-                context.LARGE_HEAT_BURST_DURATION
-            ];
+    case "event_log":
+        return [
+            data.current_state,
+            data.previous_state,
+            data.heater_state,
+            data.currentTemperature,
+            data.targetTemperature,
+            data.upperThreshold,
+            data.lowerThreshold,
+            data.maxTemperatureRiseIfHeaterTurnedOffNow,
+            data.temperatureIfHeaterTurnedOffNow,
+            data.timeLeftInWaitingPhase,
+            data.action,
+            data.HEATER_GAIN,
+            data.HEATING_INERTIA_DURATION,
+            data.SMALL_HEAT_BURST_DURATION,
+            data.LARGE_HEAT_BURST_DURATION
+        ];
     default:
         throw "No matching insert type";
     }
@@ -219,9 +219,9 @@ async function eventLoop() {
     setTimeout(eventLoop, EVENT_LOOP_INTERVAL * 1000);
 }
 
-async function handleOffState() {
+async function handleOffState(context) {
     if (targetTemperature) {
-        await transitionState(states.INITIAL_HEATING);
+        await transitionState(states.INITIAL_HEATING, context);
     }
 }
 
@@ -229,37 +229,37 @@ async function handleInitialHeatingState(context) {
     const { HEATING_INERTIA_DURATION, upperThreshold, temperatureIfHeaterTurnedOffNow } = context;
     if (temperatureIfHeaterTurnedOffNow <= upperThreshold) {
         HEATER_RELAY.writeSync(0);  // turn on heater
-        context.action = "Max temp below upper threshold, heater on"
+        context.action = "Max temp below upper threshold, heater on";
         await sendToDB("event_log", context);
     } else {
-        await transitionState(states.INERTIA_PHASE, HEATING_INERTIA_DURATION);
+        await transitionState(states.INERTIA_PHASE, context, HEATING_INERTIA_DURATION);
         HEATER_RELAY.writeSync(1);  // turn off heater
     }
 }
 
-async function handleInertiaPhaseState() {
+async function handleInertiaPhaseState(context) {
     if (timeLeftInWaitingPhase <= 0) {
-        await transitionState(states.CONTROL_PHASE);
+        await transitionState(states.CONTROL_PHASE, context);
     }
     timeLeftInWaitingPhase -= EVENT_LOOP_INTERVAL;
-    context.action = "Heating inertia waiting period"
+    context.action = "Heating inertia waiting period";
     await sendToDB("event_log", context);
 }
 
 async function handleControlPhaseState(context) {
     const { currentTemperature, lowerThreshold, SMALL_HEAT_BURST_DURATION, LARGE_HEAT_BURST_DURATION } = context;
     if (currentTemperature > targetTemperature) {
-        context.action = "Temperature above target, heater off"
+        context.action = "Temperature above target, heater off";
         HEATER_RELAY.writeSync(1);  // turn off heater
         await sendToDB("event_log", context);
     } else if (currentTemperature >= lowerThreshold && currentTemperature <= targetTemperature) {
-        await transitionState(states.SMALL_HEAT_BURST, SMALL_HEAT_BURST_DURATION);
-        context.action = "Temperature between lower threshold and target temperature, heater on"
+        await transitionState(states.SMALL_HEAT_BURST, context, SMALL_HEAT_BURST_DURATION);
+        context.action = "Temperature between lower threshold and target temperature, heater on";
         await sendToDB("event_log", context);
         HEATER_RELAY.writeSync(0);  // turn on heater
     } else {
-        await transitionState(states.LARGE_HEAT_BURST, LARGE_HEAT_BURST_DURATION);
-        context.action = "Temperature below lower threshold, heater on"
+        await transitionState(states.LARGE_HEAT_BURST, context, LARGE_HEAT_BURST_DURATION);
+        context.action = "Temperature below lower threshold, heater on";
         await sendToDB("event_log", context);
         HEATER_RELAY.writeSync(0);  // turn on heater
     }
@@ -268,8 +268,8 @@ async function handleControlPhaseState(context) {
 async function handleHeatBurstState(context) {
     const { HEATING_INERTIA_DURATION} = context;
     if (timeLeftInWaitingPhase <= 0) {
-        await transitionState(states.INERTIA_PHASE, HEATING_INERTIA_DURATION);
-        context.action = "Heat burst finished, heater off"
+        await transitionState(states.INERTIA_PHASE, context, HEATING_INERTIA_DURATION);
+        context.action = "Heat burst finished, heater off";
         await sendToDB("event_log", context);
         HEATER_RELAY.writeSync(1);  // turn off heater
     }
@@ -277,11 +277,11 @@ async function handleHeatBurstState(context) {
 }
 
 async function handleUnknownState(context) {
-    context.action = "Reached an unknown state"
+    context.action = "Reached an unknown state";
     await sendToDB("event_log", context);
 }
 
-async function transitionState(newState, inertiaTime = 0) {
+async function transitionState(newState, context, inertiaTime = 0) {
     const PREVIOUS_STATE = CONTROL_STATE;
     CONTROL_STATE = newState;
     timeLeftInWaitingPhase = inertiaTime;
