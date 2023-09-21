@@ -221,6 +221,7 @@ async function eventLoop() {
 
 async function handleOffState(context) {
     if (targetTemperature) {
+        context.action = "Setpoint set, starting control loop";
         await transitionState(states.INITIAL_HEATING, context);
     }
 }
@@ -232,6 +233,7 @@ async function handleInitialHeatingState(context) {
         context.action = "Max temp below upper threshold, heater on";
         await sendToDB("event_log", context);
     } else {
+        context.action = "Max temp above upper threshold, heater off";
         await transitionState(states.INERTIA_PHASE, context, HEATING_INERTIA_DURATION);
         HEATER_RELAY.writeSync(1);  // turn off heater
     }
@@ -239,11 +241,15 @@ async function handleInitialHeatingState(context) {
 
 async function handleInertiaPhaseState(context) {
     if (timeLeftInWaitingPhase <= 0) {
+        context.action = "End of waiting period";
         await transitionState(states.CONTROL_PHASE, context);
     }
+    else {    
+        context.action = "Heating inertia waiting period";
+        await sendToDB("event_log", context);
+    }
+    
     timeLeftInWaitingPhase -= EVENT_LOOP_INTERVAL;
-    context.action = "Heating inertia waiting period";
-    await sendToDB("event_log", context);
 }
 
 async function handleControlPhaseState(context) {
@@ -253,8 +259,8 @@ async function handleControlPhaseState(context) {
         HEATER_RELAY.writeSync(1);  // turn off heater
         await sendToDB("event_log", context);
     } else if (currentTemperature >= lowerThreshold && currentTemperature <= targetTemperature) {
-        await transitionState(states.SMALL_HEAT_BURST, context, SMALL_HEAT_BURST_DURATION);
         context.action = "Temperature between lower threshold and target temperature, heater on";
+        await transitionState(states.SMALL_HEAT_BURST, context, SMALL_HEAT_BURST_DURATION);
         await sendToDB("event_log", context);
         HEATER_RELAY.writeSync(0);  // turn on heater
     } else {
@@ -266,13 +272,15 @@ async function handleControlPhaseState(context) {
 }
 
 async function handleHeatBurstState(context) {
-    const { HEATING_INERTIA_DURATION} = context;
+    const { HEATING_INERTIA_DURATION } = context;
     if (timeLeftInWaitingPhase <= 0) {
-        await transitionState(states.INERTIA_PHASE, context, HEATING_INERTIA_DURATION);
         context.action = "Heat burst finished, heater off";
+        await transitionState(states.INERTIA_PHASE, context, HEATING_INERTIA_DURATION);
         await sendToDB("event_log", context);
         HEATER_RELAY.writeSync(1);  // turn off heater
     }
+    context.action = "In heat burst, heater on";
+    await sendToDB("event_log", context);
     timeLeftInWaitingPhase -= EVENT_LOOP_INTERVAL;
 }
 
