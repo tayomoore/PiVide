@@ -1,10 +1,13 @@
 /* global Chart */
 const STATUS_UPDATE_INTERVAL = 3000; // milliseconds
-const CHART_UPDATE_INTERVAL = 5000; //milliseconds
+const CHART_UPDATE_INTERVAL = 10000; //milliseconds, should be no shorter than the temp logging interval server-side
 let selectedTimeRange = 60; // Default time range in minutes for the x-axis of the temperature graph
 
-
+//
 // Functions
+//
+
+// for manual control/testing
 function controlHeat(command) {
     fetch("/heater", {
         method: "POST",
@@ -61,7 +64,6 @@ function updateAllStatuses() {
             document.getElementById("targetTemperatureDisplay").textContent = parseFloat(data.targetTemperature).toFixed(1);
             document.getElementById("toleranceDisplay").textContent = parseFloat(data.tolerance).toFixed(1);
             document.getElementById("heatingRateDisplay").textContent = parseFloat(data.heatingRate).toFixed(1);
-            document.getElementById("coolingRateDisplay").textContent = parseFloat(data.coolingRate).toFixed(1);
         })
         .catch(error => {
             logToServer(`Error fetching statuses: ${error}`);
@@ -128,22 +130,6 @@ function setHeatingRate() {
         });
 }
 
-function setCoolingRate() {
-    const coolingRateValue = document.getElementById("coolingRateInput").value;
-    fetch("/coolingRate", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ coolingRate: parseFloat(coolingRateValue) })
-    })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data.message);
-            document.getElementById("coolingRateDisplay").textContent = parseFloat(coolingRateValue).toFixed(1);
-        });
-}
-
 const updateChartData = async () => {
     if (!TemperatureChart) {
         console.error("Chart not initialized.");
@@ -163,6 +149,7 @@ const updateChartData = async () => {
     TemperatureChart.updateData(chartData);
 };
 
+// Used to update the time range on the temperature chart and highlight which range is currently selected
 // eslint-disable-next-line no-unused-vars
 function updateTimeRange(minutes) {
     // Update the global variable
@@ -175,6 +162,7 @@ function updateTimeRange(minutes) {
     updateChartData();
 }
 
+// underlines the time range currently selected for the chart
 function updateButtonStyles() {
     const buttons = document.querySelectorAll(".time-button");
     buttons.forEach((button) => {
@@ -200,19 +188,19 @@ const TemperatureChart = {
                     data: [],
                     borderColor: "rgba(75, 192, 192, 1)",
                     fill: false,
-                    showLine: true,
-                    spanGaps: true,
+                    showLine: true, // we want to draw a line between the points
+                    spanGaps: true, // where there are gaps/nulls in the data, still draw a line through them
                     pointRadius: 2,  // Set the point radius to make it appear as a dot
-                    pointStyle: "circle"  // Optional, you can also use "rect" for square dots
+                    pointStyle: "circle" 
                 }]
             },
             options: {
-                animation: false,  // Disable animations
+                animation: false,  // Disable distracting animations when new data is received
                 responsive: true,  // scale the chart to page width,
                 maintainAspectRatio: true,
                 plugins: {
                     legend: {
-                        display: false  // Add this line to hide the legend
+                        display: false  // Hide the legend since we only have one data series
                     }
                 },
                 scales: {
@@ -264,7 +252,6 @@ document.getElementById("heaterOn").addEventListener("click", function () { cont
 document.getElementById("heaterOff").addEventListener("click", function () { controlHeat("off"); });
 document.getElementById("setTolerance").addEventListener("click", setTolerance);
 document.getElementById("setHeatingRate").addEventListener("click", setHeatingRate);
-document.getElementById("setCoolingRate").addEventListener("click", setCoolingRate);
 document.getElementById("setSetpoint").addEventListener("click", setSetpoint);
 document.getElementById("clearSetpoint").addEventListener("click", clearSetpoint);
 document.addEventListener("DOMContentLoaded", updateAllStatuses);

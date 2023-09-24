@@ -10,11 +10,10 @@ require("dotenv").config();
 // Constants
 const app = express();
 const PORT = 3000;
-const SETPOINT_TOLERANCE_DEFAULT = 0.5; // degrees C either side of set point
-const HEATING_RATE_SECS_PER_DEGREE_DEFAULT = 100; // Default value in seconds per degree
-const COOLING_RATE_SECS_PER_DEGREE_DEFAULT = 800;  // seconds required to decrease 1°C
+const SETPOINT_TOLERANCE_DEFAULT = 0.5; // degrees C either side of set point default
+const HEATING_RATE_SECS_PER_DEGREE_DEFAULT = 100;
 const EVENT_LOOP_INTERVAL = 10; // seconds
-const HEATER_RELAY = new GPIO(2, "out");
+const HEATER_RELAY = new GPIO(2, "out"); // heater relay is connected to GPIO2
 HEATER_RELAY.writeSync(1);  // turn off heater immediately (GPIO pin is *on* by default)
 const SENSOR_ID = process.env.DS18B20_SENSOR_ID;
 const states = {
@@ -24,7 +23,7 @@ const states = {
     CONTROL_PHASE: "Control Phase",
     SMALL_HEAT_BURST: "Small Heat Burst",
     LARGE_HEAT_BURST: "Large Heat Burst"
-};
+}; // enum of states the temperature control loop can be in
 
 // db setup
 const client = new Client({ host: "localhost", database: "pivide", user: process.env.dbuser, password: process.env.dbpassword, port: 5432 });
@@ -36,16 +35,15 @@ app.use(bodyParser.json());
 // Global state variables
 let targetTemperature;  // The desired temperature to maintain
 let SETPOINT_TOLERANCE = SETPOINT_TOLERANCE_DEFAULT; // This will be the modifiable value
-let CONTROL_STATE = states.OFF; // state of control loop
+let CONTROL_STATE = states.OFF; // initial state of control loop
 let HEATING_RATE_SECS_PER_DEGREE = HEATING_RATE_SECS_PER_DEGREE_DEFAULT; // This will be the modifiable value
-let COOLING_RATE_SECS_PER_DEGREE = COOLING_RATE_SECS_PER_DEGREE_DEFAULT;
 let timeLeftInWaitingPhase = 0;
 
 
 // internal functions
 async function connectToDatabase() {
     try {
-        await client.connect(); // This is an asynchronous operation
+        await client.connect();
         console.log("Connected to the database");
         return true;
     } catch (err) {
@@ -159,15 +157,16 @@ async function logMessage(message) {
 
 async function eventLoop() {
     const currentTemperature = await readTemperature();
-    const HEATER_GAIN = 1 / HEATING_RATE_SECS_PER_DEGREE; // Define the heater's gain (inverse of the seconds/degree to get deg/sec)
-    const HEATING_INERTIA_DURATION = 200; // Define the duration for heating inertia (the time the system takes to react to the heater being turned off)
-    const SMALL_HEAT_BURST_DURATION = 60; // about 0.5C
-    const LARGE_HEAT_BURST_DURATION = 120; // about 1C
+    const HEATER_GAIN = 1 / HEATING_RATE_SECS_PER_DEGREE; // Inverse of the seconds/degree to get deg/sec
+    const HEATING_INERTIA_DURATION = 200; // The time the system takes to react to the heater being turned off
+    const SMALL_HEAT_BURST_DURATION = 60; // measured to be about 0.5C
+    const LARGE_HEAT_BURST_DURATION = 120; // measured to be about 1C
     const upperThreshold = targetTemperature + SETPOINT_TOLERANCE;
     const lowerThreshold = targetTemperature - SETPOINT_TOLERANCE;
     const maxTemperatureRiseIfHeaterTurnedOffNow = HEATER_GAIN * HEATING_INERTIA_DURATION;
     const temperatureIfHeaterTurnedOffNow = currentTemperature + maxTemperatureRiseIfHeaterTurnedOffNow;
 
+    // big object to pass around to all the different functions
     let context = {
         currentTemperature,
         HEATER_GAIN,
@@ -180,13 +179,13 @@ async function eventLoop() {
         temperatureIfHeaterTurnedOffNow,
     };
 
-    // Update context with additional variables
+    // Update context with additional variables for logging to the db later
     context.current_state = CONTROL_STATE;
     context.previous_state = null; // Will be updated in transitionState()
     context.heater_state = HEATER_RELAY.readSync() === 0 ? "On" : "Off";
     context.targetTemperature = targetTemperature;
     context.timeLeftInWaitingPhase = timeLeftInWaitingPhase;
-    context.action = null; // Will be updated as needed in state handlers
+    context.action = null; // Will be updated in state handlers
 
     // log current temperature
     try {
@@ -228,11 +227,13 @@ async function handleOffState(context) {
 
 async function handleInitialHeatingState(context) {
     const { HEATING_INERTIA_DURATION, upperThreshold, temperatureIfHeaterTurnedOffNow } = context;
+    // if we won't breach even the upper limit if we stopped heating now then keep heating
     if (temperatureIfHeaterTurnedOffNow <= upperThreshold) {
         HEATER_RELAY.writeSync(0);  // turn on heater
         context.action = "Max temp below upper threshold, heater on";
         await sendToDB("event_log", context);
     } else {
+    // if we're likely to breach the upper temperature limit stopping heating now, then turn off the heater
         context.action = "Max temp above upper threshold, heater off";
         await transitionState(states.INERTIA_PHASE, context, HEATING_INERTIA_DURATION);
         HEATER_RELAY.writeSync(1);  // turn off heater
@@ -240,6 +241,7 @@ async function handleInitialHeatingState(context) {
 }
 
 async function handleInertiaPhaseState(context) {
+    // the system has a substantial amount of "inertia" so we need a waiting period for the system to reach equilibrium
     if (timeLeftInWaitingPhase <= 0) {
         context.action = "End of waiting period";
         await transitionState(states.CONTROL_PHASE, context);
@@ -253,6 +255,7 @@ async function handleInertiaPhaseState(context) {
 }
 
 async function handleControlPhaseState(context) {
+    // once we're within touching distance of the target temperature, we do small bursts of heat to maintain it
     const { currentTemperature, lowerThreshold, SMALL_HEAT_BURST_DURATION, LARGE_HEAT_BURST_DURATION } = context;
     if (currentTemperature > targetTemperature) {
         context.action = "Temperature above target, heater off";
@@ -324,6 +327,7 @@ app.post("/log", async (req, res) => {
     }
 });
 
+// used for manual control/testing
 app.post("/heater", async (req, res) => {
     const command = req.body.command;
     if (command === "on") {
@@ -364,8 +368,7 @@ app.get("/status", async (req, res) => {
         targetTemperature: currentTargetTemperature,
         tolerance: currentTolerance,
         temperature: currentTemperatureValue,
-        heatingRate: HEATING_RATE_SECS_PER_DEGREE,
-        coolingRate: COOLING_RATE_SECS_PER_DEGREE
+        heatingRate: HEATING_RATE_SECS_PER_DEGREE
     });
 });
 
@@ -391,18 +394,7 @@ app.post("/heatingRate", (req, res) => {
     }
 });
 
-app.post("/coolingRate", (req, res) => {
-    const { coolingRate } = req.body;
-
-    if (typeof coolingRate === "number" && coolingRate > 0) {
-        COOLING_RATE_SECS_PER_DEGREE = coolingRate;
-        logMessage(`Cooling rate updated successfully to ${coolingRate} secs/°C`);
-        res.json({ success: true, message: `Cooling rate updated successfully to ${coolingRate} secs/°C` });
-    } else {
-        res.status(400).json({ success: false, message: `Invalid cooling rate value ${coolingRate}` });
-    }
-});
-
+// used for the graph on the front end
 app.get("/temperatureHistory", async (req, res) => {
     const timeRangeMinutes = req.query.timeRange || 60;  // Default to 60 minutes
     const pointsToReturn = req.query.points || 800;  // Default to 800 points
@@ -447,7 +439,7 @@ app.get("/temperatureHistory", async (req, res) => {
 // Cleanup code to release GPIO pins upon program exit
 function cleanupAndExit() {
 
-    HEATER_RELAY.writeSync(1);
+    HEATER_RELAY.writeSync(1); //turn the heater off for safety
     HEATER_RELAY.unexport();
 
     logMessage("Released the GPIO pin. Exiting now...")
