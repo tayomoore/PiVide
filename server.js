@@ -267,8 +267,8 @@ async function handleControlPhaseState(context) {
         await sendToDB("event_log", context);
         HEATER_RELAY.writeSync(0);  // turn on heater
     } else {
-        await transitionState(states.LARGE_HEAT_BURST, context, LARGE_HEAT_BURST_DURATION);
         context.action = "Temperature below lower threshold, heater on";
+        await transitionState(states.LARGE_HEAT_BURST, context, LARGE_HEAT_BURST_DURATION);
         await sendToDB("event_log", context);
         HEATER_RELAY.writeSync(0);  // turn on heater
     }
