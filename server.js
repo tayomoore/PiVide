@@ -22,7 +22,8 @@ const states = {
     INERTIA_PHASE: "Inertia Phase",
     CONTROL_PHASE: "Control Phase",
     SMALL_HEAT_BURST: "Small Heat Burst",
-    LARGE_HEAT_BURST: "Large Heat Burst"
+    LARGE_HEAT_BURST: "Large Heat Burst",
+    SUPER_HEAT_BURST: "Super Heat Burst"
 }; // enum of states the temperature control loop can be in
 
 // db setup
@@ -161,6 +162,7 @@ async function eventLoop() {
     const HEATING_INERTIA_DURATION = 200; // The time the system takes to react to the heater being turned off
     const SMALL_HEAT_BURST_DURATION = 60; // measured to be about 0.5C
     const LARGE_HEAT_BURST_DURATION = 120; // measured to be about 1C
+    const SUPER_HEAT_BURST_DURATION = 480; // measured to be about 4C
     const upperThreshold = targetTemperature + SETPOINT_TOLERANCE;
     const lowerThreshold = targetTemperature - SETPOINT_TOLERANCE;
     const maxTemperatureRiseIfHeaterTurnedOffNow = HEATER_GAIN * HEATING_INERTIA_DURATION;
@@ -173,6 +175,7 @@ async function eventLoop() {
         HEATING_INERTIA_DURATION,
         SMALL_HEAT_BURST_DURATION,
         LARGE_HEAT_BURST_DURATION,
+        SUPER_HEAT_BURST_DURATION,
         upperThreshold,
         lowerThreshold,
         maxTemperatureRiseIfHeaterTurnedOffNow,
@@ -209,6 +212,7 @@ async function eventLoop() {
         break;
     case states.SMALL_HEAT_BURST:
     case states.LARGE_HEAT_BURST:
+    case states.SUPER_HEAT_BURST:
         await handleHeatBurstState(context);
         break;
     default:
@@ -256,11 +260,16 @@ async function handleInertiaPhaseState(context) {
 
 async function handleControlPhaseState(context) {
     // once we're within touching distance of the target temperature, we do small bursts of heat to maintain it
-    const { currentTemperature, lowerThreshold, SMALL_HEAT_BURST_DURATION, LARGE_HEAT_BURST_DURATION } = context;
+    const { currentTemperature, lowerThreshold, SMALL_HEAT_BURST_DURATION, LARGE_HEAT_BURST_DURATION, SUPER_HEAT_BURST_DURATION } = context;
     if (currentTemperature > targetTemperature) {
         context.action = "Temperature above target, heater off";
         HEATER_RELAY.writeSync(1);  // turn off heater
         await sendToDB("event_log", context);
+    } else if (currentTemperature <= (targetTemperature-5)) {
+        context.action = "Temperature well below target temperature, heater on";
+        await transitionState(states.SUPER_HEAT_BURST, context, SUPER_HEAT_BURST_DURATION);
+        await sendToDB("event_log", context);
+        HEATER_RELAY.writeSync(0);  // turn on heater
     } else if (currentTemperature >= lowerThreshold && currentTemperature <= targetTemperature) {
         context.action = "Temperature between lower threshold and target temperature, heater on";
         await transitionState(states.SMALL_HEAT_BURST, context, SMALL_HEAT_BURST_DURATION);
