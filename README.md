@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS temperatures (
 - Create a table `event_log` using
 ```
 CREATE TABLE heating_control (
-    id SERIAL PRIMARY KEY
+    id SERIAL PRIMARY KEY,
     timestamp TIMESTAMPTZ DEFAULT current_timestamp,
     current_state TEXT NOT NULL,
     previous_state TEXT NOT NULL,
